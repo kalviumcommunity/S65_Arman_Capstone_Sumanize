@@ -76,6 +76,21 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
+  --font-fallback-sans: system-ui, sans-serif;
+  --font-fallback-mono: ui-monospace, monospace;
+  --font-fallback-serif: ui-serif, serif;
+}
+
+.font-sans {
+  font-family: var(--font-funnel-sans), var(--font-fallback-sans);
+}
+
+.font-mono {
+  font-family: var(--font-geist-mono), var(--font-fallback-mono);
+}
+
+.font-serif {
+  font-family: var(--font-instrument-serif), var(--font-fallback-serif);
 }
 
 .dark {

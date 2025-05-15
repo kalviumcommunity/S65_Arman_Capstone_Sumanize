@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.7",
     "@radix-ui/react-alert-dialog": "^1.1.13",
     "@radix-ui/react-avatar": "^1.1.9",
     "@radix-ui/react-label": "^2.1.6",
@@ -20,6 +21,7 @@
     "clsx": "^2.1.1",
     "lucide-react": "^0.510.0",
     "next": "15.3.2",
+    "prettier": "^3.5.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^3.3.0"
