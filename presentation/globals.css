@@ -135,3 +135,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+[data-radix-dialog-close] {
+  display: none !important;
+}

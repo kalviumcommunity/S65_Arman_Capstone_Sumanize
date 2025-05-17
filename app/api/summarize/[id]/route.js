@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/database";
+import { connectDB } from "@/lib/database";
 import Text from "@/models/Text";
 import { callGemini } from "@/lib/gemini";
 

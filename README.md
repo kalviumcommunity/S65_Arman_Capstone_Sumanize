@@ -17,8 +17,8 @@ Sumanize is a versatile text summarization tool that creates concise, accurate s
 $ git clone https://github.com/kalviumcommunity/S65_Arman_Capstone_Sumanize.git
 
 # Install dependencies using Bun
-$ bun install                                 
+$ bun install
 
 # Start the development server
-$ bun dev                                                                         
+$ bun dev
 ```

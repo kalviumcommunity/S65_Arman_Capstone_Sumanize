@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/database";
+import { connectDB } from "@/lib/database";
 import Document from "@/models/Document";
 import pdfParse from "pdf-parse";
 import mammoth from "mammoth";

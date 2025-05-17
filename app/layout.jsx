@@ -1,5 +1,7 @@
 import localFont from "next/font/local";
 import "@/presentation/globals.css";
+import { Toaster } from "sonner";
+import { AuthProvider } from "@/context/auth-context";
 
 const funnelSans = localFont({
   src: [
@@ -59,7 +61,10 @@ export default function RootLayout({ children }) {
           "antialiased bg-neutral-950",
         ].join(" ")}
       >
-        {children}
+        <AuthProvider>
+          {children}
+          <Toaster position="top-center" />
+        </AuthProvider>
       </body>
     </html>
   );

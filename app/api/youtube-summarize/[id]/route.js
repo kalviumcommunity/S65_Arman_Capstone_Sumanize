@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/database";
+import { connectDB } from "@/lib/database";
 import YT from "@/models/Youtube";
-import { getTranscript } from "youtube-transcript";
+import { YoutubeTranscript } from "youtube-transcript";
 import { callGemini } from "@/lib/gemini";
 
 export async function GET(request, { params }) {
@@ -19,7 +19,7 @@ export async function PUT(request, { params }) {
   const vid = new URL(url).searchParams.get("v");
   if (!vid) return NextResponse.json({ error: "Invalid URL" }, { status: 400 });
 
-  const transcript = await getTranscript(vid);
+  const transcript = await YoutubeTranscript.fetchTranscript(vid);
   const text = transcript.map((p) => p.text).join(" ");
   const prompt = `Summarize in markdown:\n\n${text}`;
   const summary = await callGemini(prompt);

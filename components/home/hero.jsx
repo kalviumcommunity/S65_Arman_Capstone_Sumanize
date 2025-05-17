@@ -1,37 +1,42 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
+import React from "react";
 import { useRouter } from "next/navigation";
-import { ArrowElbowRightDown } from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
 
 export default function Hero() {
   const router = useRouter();
 
   return (
-    <section className="flex flex-col items-center justify-center min-h-[60vh]">
-      <div className="text-center">
-        <h1 className="text-8xl font-serif mb-6 text-neutral-50">
-          <span className="block">Read Less.</span>
-          <span className="block">
-            Understand <em className="italic">More.</em>
-          </span>
-        </h1>
+    <section className="flex flex-col items-center justify-center min-h-[35em] text-center">
+      <h1 className="text-7xl font-serif mb-6 text-neutral-300">
+        <span className="block">Built to Save You Time,</span>
+        <span className="block">
+          AI Powered Content <em className="italic">Summarizer.</em>
+        </span>
+      </h1>
+      <p className="max-w-3xl mx-auto text-md text-neutral-400 mb-8">
+        Just drop a link or upload a file, and get clear, short, and
+        natural-sounding summaries in a flash. Works with articles, PDFs, and
+        YouTube videos. No fluff, no fancy words—just the important stuff, quick
+        and easy!
+      </p>
+      <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <Button
+          variant="secondary"
+          className="w-[10em] text-lg text-neutral-900 bg-neutral-300 hover:bg-neutral-400 rounded-full h-12 cursor-pointer transition-colors duration-300 ease-in-out"
+          onClick={() => router.push("/summarize")}
+        >
+          Summarize
+        </Button>
 
-        <p className="w-3xl mx-auto text-md text-neutral-400 mb-10">
-          Paste a link or upload a file to get clear, concise, and human-like
-          summaries in seconds. Works with articles, PDFs, and YouTube videos.
-          No clutter, no jargon, just the key points you need, fast.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button
-            variant="secondary"
-            className="w-[10em] text-lg text-neutral-900 bg-neutral-100 rounded-full h-12 cursor-pointer"
-            onClick={() => router.push("/summarize")}
-          >
-            Summerize <ArrowElbowRightDown size={32} weight="bold" />
-          </Button>
-        </div>
+        <Button
+          variant="secondary"
+          className="w-[10em] text-lg text-neutral-900 bg-neutral-300 hover:bg-neutral-400 rounded-full h-12 cursor-pointer transition-colors duration-300 ease-in-out"
+          onClick={() => router.push("/humanize")}
+        >
+          Humanize
+        </Button>
       </div>
     </section>
   );
