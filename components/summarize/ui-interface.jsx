@@ -23,7 +23,7 @@ export default function ChatDisplay({ messages }) {
   return (
     <div className="flex-grow relative overflow-hidden mb-4 bg-transparent h-full">
       <div
-        className="h-full w-full overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800 pb-24"
+        className="h-full w-full overflow-y-auto p-2 scrollbar-thin scrollbar-thumb-neutral-700 scrollbar-track-neutral-800"
         ref={containerRef}
       >
         <div className="max-w-5xl w-full mx-auto min-h-[calc(100vh-4rem)]">
@@ -34,7 +34,7 @@ export default function ChatDisplay({ messages }) {
           ) : (
             <div className="flex flex-col items-center justify-center min-h-[calc(100vh-6rem)] text-center px-4">
               <div className="flex flex-col items-center mb-4">
-                <StarFour size={60} className="text-neutral-300 mb-4" />
+                <StarFour size={60} className="text-neutral-300 mb-2" />
                 <h1 className="text-6xl font-serif text-neutral-300 text-center tracking-wide">
                   Sumanize
                 </h1>

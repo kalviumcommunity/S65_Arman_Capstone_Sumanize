@@ -3,19 +3,13 @@
 import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  ArrowUp,
-  Clipboard,
-  File,
-  YoutubeLogo,
-  Eye,
-  Translate,
-} from "@phosphor-icons/react";
+import { ArrowUp, Clipboard, File, YoutubeLogo } from "@phosphor-icons/react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import CommandPalette from "./cmdk";
 
 export default function ExpandableInput({ onSubmit, isLoading }) {
   const [inputValue, setInputValue] = useState("");
@@ -28,10 +22,6 @@ export default function ExpandableInput({ onSubmit, isLoading }) {
 
   const handleYoutubeURLButton = () => {
     alert("YouTube URL functionality not implemented yet.");
-  };
-
-  const handleTranslateButton = () => {
-    alert("Translate functionality not implemented yet.");
   };
 
   const handleSubmit = (e) => {
@@ -83,12 +73,12 @@ export default function ExpandableInput({ onSubmit, isLoading }) {
   }, [isExpanded]);
 
   return (
-    <div className="w-full absolute bottom-8 right-8 z-10 flex flex-col items-end gap-3">
+    <div className="absolute bottom-8 right-8 z-10 flex flex-col items-end gap-3">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
             onClick={toggleExpanded}
-            className="h-10 w-10 rounded-lg bg-neutral-800/50 text-amber-200 cursor-pointer hover:bg-neutral-800/50"
+            className="h-12 w-12 rounded-lg bg-neutral-800/50 text-blue-400 cursor-pointer hover:bg-neutral-800/50"
           >
             <Clipboard weight="duotone" size={18} />
           </Button>
@@ -102,7 +92,7 @@ export default function ExpandableInput({ onSubmit, isLoading }) {
         <TooltipTrigger asChild>
           <Button
             onClick={handleFileUploadButton}
-            className="h-10 w-10 rounded-lg bg-neutral-800/50 text-indigo-200 cursor-pointer hover:bg-neutral-800/50"
+            className="h-12 w-12 rounded-lg bg-neutral-800/50 text-teal-400 cursor-pointer hover:bg-neutral-800/50"
           >
             <File weight="duotone" size={18} />
           </Button>
@@ -116,41 +106,13 @@ export default function ExpandableInput({ onSubmit, isLoading }) {
         <TooltipTrigger asChild>
           <Button
             onClick={handleYoutubeURLButton}
-            className="h-10 w-10 rounded-lg bg-neutral-800/50 text-rose-300 cursor-pointer hover:bg-neutral-800/50"
+            className="h-12 w-12 rounded-lg bg-neutral-800/50 text-red-400 cursor-pointer hover:bg-neutral-800/50"
           >
             <YoutubeLogo weight="duotone" size={18} />
           </Button>
         </TooltipTrigger>
         <TooltipContent side="left" className="bg-neutral-950 mr-2">
           Summarize Videos
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={handleYoutubeURLButton}
-            className="h-10 w-10 rounded-lg bg-neutral-800/50 text-emerald-200 cursor-pointer hover:bg-neutral-800/50"
-          >
-            <Eye weight="duotone" size={18} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="left" className="bg-neutral-950 mr-2">
-          Humanize Text
-        </TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <Button
-            onClick={handleTranslateButton}
-            className="h-10 w-10 rounded-lg bg-neutral-800/50 text-violet-200 cursor-pointer hover:bg-neutral-800/50"
-          >
-            <Translate weight="duotone" size={18} />
-          </Button>
-        </TooltipTrigger>
-        <TooltipContent side="left" className="bg-neutral-950 mr-2">
-          Translate Content
         </TooltipContent>
       </Tooltip>
 

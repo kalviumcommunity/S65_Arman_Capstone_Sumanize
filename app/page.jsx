@@ -1,64 +1,145 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { ChatProvider } from "@/context/chat-context";
 import { useAuth } from "@/context/auth-context";
-import { useRouter } from "next/navigation";
-import Hero from "@/components/home/hero";
-import Preview from "@/components/home/preview";
-import Footer from "@/components/home/footer";
+import { toast } from "sonner";
+import { Spinner } from "@phosphor-icons/react";
+import Sidebar from "@/components/summarize/sidebar";
+import Conversation from "@/components/summarize/conversation";
 import { AuthModal } from "@/components/auth/auth-modal";
 import { Button } from "@/components/ui/button";
+import AccountMenu from "@/components/summarize/account";
+import { motion } from "framer-motion";
 
-export default function Page() {
+function SummarizeContent() {
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [sidebarWidth, setSidebarWidth] = useState(256);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState("login");
   const { user, isLoading } = useAuth();
-  const router = useRouter();
 
-  // Redirect to /summarize when user is authenticated
   useEffect(() => {
-    if (!isLoading && user) {
-      router.push("/summarize");
-    }
-  }, [user, isLoading, router]);
+    const saved = localStorage.getItem("sumanize_sidebar_width");
+    if (saved) setSidebarWidth(parseInt(saved, 10));
+  }, []);
 
-  const openLoginModal = () => {
-    setAuthModalTab("login");
+  useEffect(() => {
+    localStorage.setItem("sumanize_sidebar_width", sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  useEffect(() => {
+    const handleOpenAuthModal = (e) => {
+      if (e.detail && e.detail.tab) {
+        setAuthModalTab(e.detail.tab);
+      }
+      setIsAuthModalOpen(true);
+    };
+
+    const handleShowAuthToast = () => {
+      toast.info("Sign up to save your conversations", {
+        action: {
+          label: "Sign Up",
+          onClick: () => openAuthModal("register"),
+        },
+      });
+    };
+
+    document.addEventListener("open-auth-modal", handleOpenAuthModal);
+    document.addEventListener("show-auth-toast", handleShowAuthToast);
+
+    return () => {
+      document.removeEventListener("open-auth-modal", handleOpenAuthModal);
+      document.removeEventListener("show-auth-toast", handleShowAuthToast);
+    };
+  }, []);
+
+  const openAuthModal = (tab = "login") => {
+    setAuthModalTab(tab);
     setIsAuthModalOpen(true);
   };
 
-  const openRegisterModal = () => {
-    setAuthModalTab("register");
-    setIsAuthModalOpen(true);
+  const fadeIn = {
+    hidden: {
+      opacity: 0,
+      filter: "blur(40px)",
+    },
+    visible: {
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        duration: 0.2,
+        ease: "easeInOut",
+      },
+    },
   };
+
+  // if (isLoading) {
+  //   return (
+  //     <motion.div
+  //       className="bg-neutral-900 min-h-screen flex items-center justify-center"
+  //       initial="hidden"
+  //       animate="visible"
+  //       variants={fadeIn}
+  //     >
+  //       <Spinner
+  //         className="animate-spin text-neutral-300"
+  //         size={40}
+  //       />
+  //     </motion.div>
+  //   );
+  // }
 
   return (
-    <main className="min-h-screen">
-      <div className="absolute top-4 right-4 flex gap-2">
-        <Button
-          variant="ghost"
-          className="text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800"
-          onClick={openLoginModal}
-        >
-          Login
-        </Button>
-        <Button
-          className="bg-neutral-300 hover:bg-neutral-200 text-neutral-900"
-          onClick={openRegisterModal}
-        >
-          Sign Up
-        </Button>
-      </div>
+    <>
+      <motion.div
+        className="bg-neutral-900 min-h-screen flex h-screen relative"
+        initial="hidden"
+        animate="visible"
+        variants={fadeIn}
+      >
+        <Sidebar
+          selectedIds={selectedIds}
+          setSelectedIds={setSelectedIds}
+          sidebarWidth={sidebarWidth}
+          setSidebarWidth={setSidebarWidth}
+          user={user}
+        />
+        <Conversation
+          selectedIds={selectedIds}
+          setSelectedIds={setSelectedIds}
+          sidebarWidth={sidebarWidth}
+        />
 
-      <Hero />
-      <Preview />
-      <Footer />
+        {/* Authentication UI */}
+        <div className="absolute top-4 right-4 z-50">
+          {user ? (
+            <AccountMenu user={user} />
+          ) : (
+            <Button
+              variant="secondary"
+              className="bg-neutral-300 hover:bg-neutral-400 text-neutral-900 cursor-pointer transition-colors duration-300 ease-in-out"
+              onClick={() => openAuthModal("login")}
+            >
+              Get Started
+            </Button>
+          )}
+        </div>
+      </motion.div>
 
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         defaultTab={authModalTab}
       />
-    </main>
+    </>
+  );
+}
+
+export default function SummarizePage() {
+  return (
+    <ChatProvider>
+      <SummarizeContent />
+    </ChatProvider>
   );
 }
