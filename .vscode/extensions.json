@@ -1,0 +1,9 @@
+{
+  "recommendations": [
+    "miguelsolorio.fluent-icons",
+    "miguelsolorio.symbols",
+    "bradlc.vscode-tailwindcss",
+    "gantoreno.vscode-vercel-theme",
+    "dsznajder.es7-react-js-snippets"
+  ]
+}
