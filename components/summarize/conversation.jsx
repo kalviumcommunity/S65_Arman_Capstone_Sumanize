@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/context/auth-context";
 import { useChat } from "@/context/chat-context";
 import ChatDisplay from "@/components/summarize/ui-interface";
-import InputArea from "@/components/summarize/input-area";
+import ChatInputModal from "@/components/summarize/cmdk";
 import {
   AlertDialog,
   AlertDialogContent,
@@ -71,17 +71,14 @@ export default function Conversation({
         <div className="flex-grow flex flex-col h-full bg-neutral-900">
           <ChatDisplay messages={activeMessages} />
         </div>
-        <div className="absolute bottom-0 left-0 w-full px-0 pb-0 z-30">
-          <InputArea onSubmit={handleSubmitText} isLoading={isLoading} />
-        </div>
       </main>
+      <ChatInputModal onSubmit={handleSubmitText} isLoading={isLoading} />
 
-      {/* Bulk delete confirmation dialog */}
       <AlertDialog
         open={isDeleteDialogOpen}
         onOpenChange={setIsDeleteDialogOpen}
       >
-        <AlertDialogContent className="bg-neutral-900 border-2 border-neutral-800">
+        <AlertDialogContent className="bg-neutral-900 border-none">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-neutral-300">
               Delete {selectedIds.length} conversation
@@ -93,7 +90,7 @@ export default function Conversation({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel className="border-none bg-neutral-800 hover:bg-neutral-700 text-zinc-100">
+            <AlertDialogCancel className="border-none bg-neutral-800 hover:bg-neutral-800 hover:text-neutral-300 text-neutral-300">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -105,7 +102,7 @@ export default function Conversation({
                   }
                   setSelectedIds([]);
                   setIsDeleteDialogOpen(false);
-                  toast.success("Deleted");
+                  toast.success("Chats deleted from history");
                 } else {
                   toast.info("Sign up to manage conversations");
                   setIsDeleteDialogOpen(false);

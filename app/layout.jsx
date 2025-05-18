@@ -1,48 +1,7 @@
-import localFont from "next/font/local";
 import "@/presentation/globals.css";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/context/auth-context";
-
-const funnelSans = localFont({
-  src: [
-    {
-      path: "./fonts/FunnelSans-VariableFont_wght.ttf",
-      weight: "100 900",
-      style: "normal",
-    },
-  ],
-  variable: "--font-funnel-sans",
-  display: "swap",
-});
-
-const geistMono = localFont({
-  src: [
-    {
-      path: "./fonts/GeistMono-VariableFont_wght.ttf",
-      weight: "100 900",
-      style: "normal",
-    },
-  ],
-  variable: "--font-geist-mono",
-  display: "swap",
-});
-
-const instrumentSerif = localFont({
-  src: [
-    {
-      path: "./fonts/InstrumentSerif-Regular.ttf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "./fonts/InstrumentSerif-Italic.ttf",
-      weight: "400",
-      style: "italic",
-    },
-  ],
-  variable: "--font-instrument-serif",
-  display: "swap",
-});
+import { funnelSans, geistMono, instrumentSerif } from "@/app/fonts";
 
 export const metadata = {
   title: "Sumanize - Text Summarization",
@@ -63,7 +22,13 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           {children}
-          <Toaster position="top-center" />
+          <Toaster
+            position="bottom-right"
+            duration={5000}
+            visibleToasts={1}
+            gap={24}
+            theme="dark"
+          />
         </AuthProvider>
       </body>
     </html>

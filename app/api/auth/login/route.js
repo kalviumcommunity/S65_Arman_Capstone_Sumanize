@@ -33,12 +33,12 @@ export async function POST(req) {
 
     const token = sign(
       { id: user._id, email: user.email },
-      process.env.JWT_SECRET || "your-secret-key",
+      process.env.JWT_SECRET,
       { expiresIn: "7d" },
     );
 
     cookies().set({
-      name: "sumanize_token",
+      name: "sumanize-token",
       value: token,
       httpOnly: true,
       path: "/",

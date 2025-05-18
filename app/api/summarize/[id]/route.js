@@ -16,7 +16,11 @@ export async function PUT(request, { params }) {
   if (!text)
     return NextResponse.json({ error: "Missing text" }, { status: 400 });
 
-  const prompt = `Summarize in markdown:\n\n${text}`;
+  const prompt = `Summarize the following text in markdown format. Use appropriate markdown 
+  list formatting (bullet points, numbered lists, etc.) based on the content. Avoid using only 
+  paragraphs - structure the information in lists where it makes sense. When including code 
+  solutions, present them in proper markdown code blocks with appropriate language syntax 
+  highlighting, followed by explanations or summaries.\n\n${text}`;
   const summary = await callGemini(prompt);
 
   const updated = await Text.findByIdAndUpdate(

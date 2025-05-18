@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export async function POST() {
   try {
     cookies().set({
-      name: "sumanize_token",
+      name: "sumanize-token",
       value: "",
       httpOnly: true,
       path: "/",

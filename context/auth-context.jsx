@@ -23,9 +23,6 @@ export function AuthProvider({ children }) {
         if (res.ok) {
           const data = await res.json();
           setUser(data.user);
-          if (data.user && window.location.pathname === "/") {
-            router.push("/summarize");
-          }
         }
       } catch (error) {
         console.error("Error checking auth:", error);
@@ -53,7 +50,6 @@ export function AuthProvider({ children }) {
       }
 
       setUser(data.user);
-      router.push("/summarize");
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };

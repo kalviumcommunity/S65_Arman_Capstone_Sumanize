@@ -1,46 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import * as Cmdk from "cmdk";
-import { useRouter } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
+import { Clock } from "@phosphor-icons/react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import {
-  MagnifyingGlass,
-  Clipboard,
-  File,
-  YoutubeLogo,
-  Eye,
-  Translate,
-} from "@phosphor-icons/react";
+import { Textarea } from "@/components/ui/textarea";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
-function VisuallyHidden({ children }) {
-  return (
-    <span
-      style={{
-        position: "absolute",
-        width: 1,
-        height: 1,
-        padding: 0,
-        margin: -1,
-        overflow: "hidden",
-        clip: "rect(0,0,0,0)",
-        whiteSpace: "nowrap",
-        border: 0,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
+const VisuallyHidden = ({ children }) => (
+  <span
+    style={{
+      border: 0,
+      clip: "rect(0 0 0 0)",
+      height: "1px",
+      margin: "-1px",
+      overflow: "hidden",
+      padding: 0,
+      position: "absolute",
+      width: "1px",
+      whiteSpace: "nowrap",
+    }}
+  >
+    {children}
+  </span>
+);
 
-export default function CommandPalette() {
+export default function ChatInputModal({ onSubmit, isLoading }) {
   const [open, setOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
-  const router = useRouter();
+  const textareaRef = useRef(null);
+
+  const chatHistory = [
+    { id: 1, text: "Climate Change Effects on Global Food Systems" },
+    { id: 2, text: "Core Concepts from Machine Learning Research Paper" },
+    { id: 3, text: "Startup Growth Tactics: A Quick Breakdown" },
+    { id: 4, text: "Interview Highlights: Leadership and Innovation Insights" },
+    { id: 5, text: "Psychological Principles from Recent Book Chapter" },
+  ];
 
   useEffect(() => {
     const onKeyDown = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
@@ -49,132 +48,104 @@ export default function CommandPalette() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
 
-  const onSelect = (path) => {
-    setOpen(false);
-    router.push(path);
+  useEffect(() => {
+    if (open && textareaRef.current) {
+      setTimeout(() => textareaRef.current.focus(), 50);
+    }
+  }, [open]);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+      textareaRef.current.style.height = `${Math.min(
+        150,
+        Math.max(50, textareaRef.current.scrollHeight),
+      )}px`;
+    }
+  }, [inputValue]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (inputValue.trim() && !isLoading) {
+      onSubmit(inputValue);
+      setInputValue("");
+      setOpen(false);
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Escape") {
+      setOpen(false);
+    } else if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e);
+    }
+  };
+
+  const selectHistoryItem = (text) => {
+    setInputValue(text);
   };
 
   return (
-    <>
-      {/* <button 
-        onClick={() => setOpen(true)}
-        className="flex items-center px-3 py-2 text-sm rounded-md bg-neutral-800 text-neutral-400 hover:bg-neutral-700 transition-colors"
-      >
-        <Search size={16} className="mr-2" />
-        <span>Search</span>
-        <kbd className="ml-auto inline-flex items-center gap-1 rounded border border-neutral-700 bg-neutral-900 px-1.5 font-mono text-xs text-neutral-400">
-          ⌘K
-        </kbd>
-      </button> */}
-
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="p-4 max-w-lg w-full bg-neutral-800/30 backdrop-blur-lg border-none rounded-lg overflow-hidden">
-          <VisuallyHidden>
-            <DialogTitle>Command Palette</DialogTitle>
-          </VisuallyHidden>
-          <Cmdk.Command
-            className="w-full"
-            value={inputValue}
-            onValueChange={setInputValue}
-          >
-            <div className="flex items-center border-b border-neutral-800 px-3">
-              <MagnifyingGlass className="h-4 w-4 text-neutral-500 mr-2" />
-              <Cmdk.CommandInput
-                className="h-12 w-full bg-transparent text-neutral-500 placeholder:text-neutral-500 focus:outline-none text-sm"
-                placeholder="Type a command or search…"
-              />
+    <Dialog open={open} onOpenChange={setOpen}>
+      <DialogContent className="bg-transparent border-none shadow-none max-w-2xl w-full flex flex-col">
+        <VisuallyHidden>
+          <DialogTitle>Chat Input</DialogTitle>
+        </VisuallyHidden>
+        <div className="bg-neutral-950/90 backdrop-blur-sm rounded-md p-6 shadow-none border border-neutral-800">
+          <div className="w-full flex justify-end text-sm text-neutral-500 pb-2">
+            <div className="flex items-center gap-1">
+              <span>Press</span>
+              <code className="px-2 py-0.5 text-xs bg-neutral-800 rounded-sm">
+                Esc
+              </code>
+              <span>to dismiss,</span>
+              <code className="px-2 py-0.5 text-xs bg-neutral-800 rounded-sm">
+                Enter
+              </code>
+              <span>to send</span>
             </div>
-
-            <Cmdk.CommandList className="max-h-80 overflow-y-auto py-2">
-              <Cmdk.CommandEmpty className="py-6 text-center text-sm text-neutral-500">
-                No results found.
-              </Cmdk.CommandEmpty>
-
-              <Cmdk.CommandGroup className="pb-1">
-                <Cmdk.CommandItem
-                  className="mx-2 mb-2 px-3 py-2.5 rounded-md cursor-pointer flex items-center gap-4 text-neutral-300 aria-selected:bg-neutral-800/50 transition-colors hover:bg-neutral-800"
-                  onSelect={() => onSelect("/summarize")}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-800 text-amber-200">
-                    <Clipboard weight="duotone" size={18} />
+          </div>
+          <form
+            onSubmit={handleSubmit}
+            className="w-full flex items-center gap-2 border-none bg-neutral-900/40 focus-ring-0 rounded-md mt-4 mx-auto px-4 py-3"
+          >
+            <Textarea
+              ref={textareaRef}
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Pasete or content here…"
+              className="flex-grow resize-none rounded-md py-1 px-2 text-md text-neutral-200 bg-transparent border-none outline-none focus:ring-0 placeholder:text-neutral-500"
+              style={{ minHeight: "28px", maxHeight: "150px" }}
+              rows={1}
+            />
+          </form>
+          {open && (
+            <ScrollArea className="mt-1 max-h-[300px]">
+              <div className="py-2">
+                <div className="px-4 py-2">
+                  <div className="flex items-center gap-2 text-sm text-neutral-400 mb-2">
+                    <Clock className="h-4 w-4" />
+                    <span>Recent conversations</span>
                   </div>
-                  <div className="flex flex-row items-center justify-left w-full">
-                    <span>Summarize Text</span>
-                    <span className="text-xs text-neutral-500 ml-1">
-                      {" "}
-                      - Condense your pasted text content
-                    </span>
+                  <div className="space-y-1">
+                    {chatHistory.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => selectHistoryItem(item.text)}
+                        className="w-full text-left px-3 py-2 rounded-md hover:bg-neutral-900 text-neutral-300 text-sm transition-colors cursor-pointer"
+                      >
+                        <p className="line-clamp-1">{item.text}</p>
+                      </button>
+                    ))}
                   </div>
-                </Cmdk.CommandItem>
-
-                <Cmdk.CommandItem
-                  className="mx-2 mb-2 px-3 py-2.5 rounded-md cursor-pointer flex items-center gap-4 text-neutral-300 aria-selected:bg-neutral-800/50 transition-colors hover:bg-neutral-800"
-                  onSelect={() => onSelect("/summarize/docs")}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-800 text-indigo-200">
-                    <File weight="duotone" size={18} />
-                  </div>
-                  <div className="flex flex-row items-center justify-left w-full">
-                    <span>Summarize Document</span>
-                    <span className="text-xs text-neutral-500 ml-1">
-                      {" "}
-                      - Extract from uploaded documents
-                    </span>
-                  </div>
-                </Cmdk.CommandItem>
-
-                <Cmdk.CommandItem
-                  className="mx-2 mb-2 px-3 py-2.5 rounded-md cursor-pointer flex items-center gap-4 text-neutral-300 aria-selected:bg-neutral-800/50 transition-colors hover:bg-neutral-800"
-                  onSelect={() => onSelect("/summarize/youtube")}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-800 text-rose-300">
-                    <YoutubeLogo weight="duotone" size={18} />
-                  </div>
-                  <div className="flex flex-row items-center justify-left w-full">
-                    <span>Summarize Videos</span>
-                    <span className="text-xs text-neutral-500 ml-1">
-                      {" "}
-                      - Get video content summaries
-                    </span>
-                  </div>
-                </Cmdk.CommandItem>
-
-                <Cmdk.CommandItem
-                  className="mx-2 mb-2 px-3 py-2.5 rounded-md cursor-pointer flex items-center gap-4 text-neutral-300 aria-selected:bg-neutral-800/50 transition-colors hover:bg-neutral-800"
-                  onSelect={() => onSelect("/humanize")}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-800 text-emerald-200">
-                    <Eye weight="duotone" size={18} />
-                  </div>
-                  <div className="flex flex-row items-center justify-left w-full">
-                    <span>Humanize Text</span>
-                    <span className="text-xs text-neutral-500 ml-1">
-                      {" "}
-                      - Make content sound more natural
-                    </span>
-                  </div>
-                </Cmdk.CommandItem>
-
-                <Cmdk.CommandItem
-                  className="mx-2 px-3 py-2.5 rounded-md cursor-pointer flex items-center gap-4 text-neutral-300 aria-selected:bg-neutral-800/50 transition-colors hover:bg-neutral-800"
-                  onSelect={() => onSelect("/translate")}
-                >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-neutral-800 text-violet-200">
-                    <Translate weight="duotone" size={18} />
-                  </div>
-                  <div className="flex flex-row items-center justify-left w-full">
-                    <span>Translate Content</span>
-                    <span className="text-xs text-neutral-500 ml-1">
-                      {" "}
-                      - Translate your content to any language
-                    </span>
-                  </div>
-                </Cmdk.CommandItem>
-              </Cmdk.CommandGroup>
-            </Cmdk.CommandList>
-          </Cmdk.Command>
-        </DialogContent>
-      </Dialog>
-    </>
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }

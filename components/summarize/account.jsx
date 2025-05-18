@@ -48,7 +48,7 @@ export default function AccountMenu({ user }) {
         side="bottom"
         align="end"
         sideOffset={16}
-        className="w-70 bg-neutral-900 border-neutral-800 text-neutral-300 p-6"
+        className="w-70 bg-neutral-950 border-none text-neutral-300 p-6"
       >
         <div className="flex justify-between items-start">
           <div>
@@ -64,15 +64,15 @@ export default function AccountMenu({ user }) {
               <TooltipTrigger asChild>
                 <Button
                   variant="secondary"
-                  className="flex-1 w-full text-neutral-900 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
+                  className="flex-1 w-full text-neutral-900 bg-neutral-300 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
                   onClick={() => alert("Go Premium")}
                 >
                   <StarFour size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent
-                side="bottom"
-                className="bg-neutral-950 text-neutral-300 mt-2"
+                side="top"
+                className="bg-neutral-900 text-neutral-300 mt-2"
               >
                 Go Premium
               </TooltipContent>
@@ -82,15 +82,15 @@ export default function AccountMenu({ user }) {
               <TooltipTrigger asChild>
                 <Button
                   variant="secondary"
-                  className="flex-1 w-full text-neutral-900 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
+                  className="flex-1 w-full text-neutral-900 bg-neutral-300 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
                   onClick={() => alert("Change Email")}
                 >
                   <PencilSimple size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent
-                side="bottom"
-                className="bg-neutral-950 text-neutral-300 mt-2"
+                side="top"
+                className="bg-neutral-900 text-neutral-300 mt-2"
               >
                 Change Email
               </TooltipContent>
@@ -100,17 +100,17 @@ export default function AccountMenu({ user }) {
               <TooltipTrigger asChild>
                 <Button
                   variant="secondary"
-                  className="flex-1 w-full text-neutral-900 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
+                  className="flex-1 w-full text-neutral-900 bg-neutral-300 hover:bg-neutral-400 justify-center cursor-pointer transition-colors duration-300 ease-in-out"
                   onClick={logout}
                 >
                   <SignOut size={18} />
                 </Button>
               </TooltipTrigger>
               <TooltipContent
-                side="bottom"
-                className="bg-neutral-950 text-neutral-300 mt-2"
+                side="top"
+                className="bg-neutral-900 text-neutral-300 mt-2"
               >
-                Logout
+                Get outside
               </TooltipContent>
             </Tooltip>
           </div>

@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { useChat } from "@/context/chat-context";
+import { Separator } from "@/components/ui/separator";
 
 export default function Sidebar({
   selectedIds,
@@ -89,10 +90,20 @@ export default function Sidebar({
     }
   };
 
-  const handleNewChat = () => {
-    startNewConversation();
+  const handleNewChat = async () => {
     if (!user) {
       document.dispatchEvent(new CustomEvent("show-auth-toast"));
+      return;
+    }
+
+    const emptyConversation = conversations.find(
+      (c) => c.messages.length === 0,
+    );
+
+    if (emptyConversation) {
+      selectConversation(emptyConversation.id);
+    } else {
+      await startNewConversation();
     }
   };
 
@@ -137,12 +148,14 @@ export default function Sidebar({
           </div>
         </div>
 
+        <Separator className="w-full bg-neutral-800 rounded-md mb-4" />
+
         <ScrollArea className="h-[calc(100vh-220px)]">
           {!user && filteredConversations.length > 0 && (
-            <div className="mb-3 px-2 py-2 bg-neutral-900/50 rounded text-xs text-neutral-400">
-              These conversations are temporary.
+            <div className="mb-3 px-2 py-2 bg-neutral-900/50 rounded-md text-sm text-neutral-500">
+              These conversations are temporary. If you want to save them, then
               <button
-                className="text-neutral-300 hover:underline ml-1"
+                className="text-neutral-400 hover:underline ml-1 cursor-pointer"
                 onClick={() =>
                   document.dispatchEvent(
                     new CustomEvent("open-auth-modal", {
@@ -151,9 +164,9 @@ export default function Sidebar({
                   )
                 }
               >
-                Sign up
-              </button>{" "}
-              to save them.
+                authenticate
+              </button>
+              .
             </div>
           )}
 
@@ -220,7 +233,6 @@ export default function Sidebar({
         </button>
       </div>
 
-      {/* Sidebar resize gutter */}
       <div
         className="absolute right-0 top-0 h-full w-1 cursor-col-resize hover:bg-neutral-800 active:bg-neutral-800"
         onMouseDown={handleMouseDown}

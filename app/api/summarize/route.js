@@ -42,9 +42,7 @@ export async function POST(request) {
   list formatting (bullet points, numbered lists, etc.) based on the content. Avoid using only 
   paragraphs - structure the information in lists where it makes sense. When including code 
   solutions, present them in proper markdown code blocks with appropriate language syntax 
-  highlighting, followed by explanations or summaries.
-  
-  ${text}`;
+  highlighting, followed by explanations or summaries.\n\n${text}`;
 
   const summary = await callGemini(prompt);
 

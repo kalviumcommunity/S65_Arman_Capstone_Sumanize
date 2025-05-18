@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef } from "react";
 import { v4 as uuidv4 } from "uuid";
 import { useAuth } from "./auth-context";
 
@@ -24,49 +24,67 @@ export function ChatProvider({ children }) {
   const [activeTab, setActiveTab] = useState("text");
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
+  const isFirstSave = useRef(true);
 
   useEffect(() => {
     const loadConversations = async () => {
       try {
+        let loadedConversations = [];
+        let savedCurrentId = localStorage.getItem(
+          "sumanize-current-conversation",
+        );
+
         if (user) {
-          const response = await fetch("/api/chats");
+          const response = await fetch("/api/message");
           if (response.ok) {
             const raw = await response.json();
-            const chats = raw.map((chat) => ({ ...chat, id: chat._id }));
-            setConversations(chats);
-
-            if (chats.length > 0) {
-              const mostRecent = chats.sort(
-                (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
-              )[0];
-              setCurrentConversationId(mostRecent.id);
-              setActiveMessages(mostRecent.messages);
-            }
+            loadedConversations = raw.map((chat) => ({
+              ...chat,
+              id: chat._id,
+            }));
+            setConversations(loadedConversations);
           }
         } else {
           const savedConversations = localStorage.getItem(
-            "sumanize_conversations",
+            "sumanize-conversation",
           );
           if (savedConversations) {
-            const parsedConversations = JSON.parse(savedConversations);
-            setConversations(parsedConversations);
-
-            if (parsedConversations.length > 0) {
-              const mostRecent = parsedConversations.sort(
-                (a, b) => new Date(b.updatedAt) - new Date(a.updatedAt),
-              )[0];
-              setCurrentConversationId(mostRecent.id);
-              setActiveMessages(mostRecent.messages);
-            }
+            loadedConversations = JSON.parse(savedConversations);
+            setConversations(loadedConversations);
           }
         }
 
-        const savedTab = localStorage.getItem("sumanize_active_tab");
+        if (
+          savedCurrentId &&
+          loadedConversations.some((c) => c.id === savedCurrentId)
+        ) {
+          setCurrentConversationId(savedCurrentId);
+          const currentConvo = loadedConversations.find(
+            (c) => c.id === savedCurrentId,
+          );
+          if (currentConvo) {
+            setActiveMessages(currentConvo.messages);
+          }
+        } else {
+          const emptyConversation = loadedConversations.find(
+            (c) => c.messages.length === 0,
+          );
+
+          if (emptyConversation) {
+            setCurrentConversationId(emptyConversation.id);
+            setActiveMessages([]);
+          } else {
+            await startNewConversation();
+          }
+        }
+
+        const savedTab = localStorage.getItem("sumanize-active-tab");
         if (savedTab) {
           setActiveTab(savedTab);
         }
       } catch (error) {
         console.error("Failed to load conversations:", error);
+        await startNewConversation();
       }
     };
 
@@ -74,17 +92,28 @@ export function ChatProvider({ children }) {
   }, [user]);
 
   useEffect(() => {
+    if (isFirstSave.current) {
+      isFirstSave.current = false;
+      return;
+    }
     try {
       if (!user) {
         localStorage.setItem(
-          "sumanize_conversations",
+          "sumanize-conversation",
           JSON.stringify(conversations),
+        );
+      }
+
+      if (currentConversationId) {
+        localStorage.setItem(
+          "sumanize-current-conversation",
+          currentConversationId,
         );
       }
     } catch (error) {
       console.error("Failed to save conversations:", error);
     }
-  }, [conversations, user]);
+  }, [conversations, currentConversationId, user]);
 
   useEffect(() => {
     if (currentConversationId) {
@@ -99,17 +128,27 @@ export function ChatProvider({ children }) {
 
   useEffect(() => {
     try {
-      localStorage.setItem("sumanize_active_tab", activeTab);
+      localStorage.setItem("sumanize-active-tab", activeTab);
     } catch (error) {
       console.error("Failed to save active tab to localStorage:", error);
     }
   }, [activeTab]);
 
   const startNewConversation = async () => {
+    const emptyConversation = conversations.find(
+      (c) => c.messages.length === 0,
+    );
+
+    if (emptyConversation) {
+      setCurrentConversationId(emptyConversation.id);
+      setActiveMessages([]);
+      return emptyConversation.id;
+    }
+
     const newId = uuidv4();
     const newConversation = {
       id: newId,
-      title: "New Chat",
+      title: "Start Conversation",
       messages: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -117,7 +156,7 @@ export function ChatProvider({ children }) {
 
     if (user) {
       try {
-        const response = await fetch("/api/chats", {
+        const response = await fetch("/api/message", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -131,6 +170,7 @@ export function ChatProvider({ children }) {
           setConversations((prev) => [newChat, ...prev]);
           setCurrentConversationId(newChat.id);
           setActiveMessages([]);
+          return newChat.id;
         }
       } catch (error) {
         console.error("Failed to create new conversation:", error);
@@ -139,6 +179,7 @@ export function ChatProvider({ children }) {
       setConversations((prev) => [newConversation, ...prev]);
       setCurrentConversationId(newId);
       setActiveMessages([]);
+      return newId;
     }
   };
 
@@ -159,10 +200,6 @@ export function ChatProvider({ children }) {
         data,
         timestamp: new Date().toISOString(),
       };
-
-      if (!currentConversationId) {
-        await startNewConversation();
-      }
 
       const updatedMessages = [...activeMessages, userMessage];
       setActiveMessages(updatedMessages);
@@ -216,13 +253,13 @@ export function ChatProvider({ children }) {
         title:
           conversationTitle ||
           conversations.find((c) => c.id === currentConversationId)?.title ||
-          "New Chat",
+          "Start Conversation",
         updatedAt: new Date().toISOString(),
       };
 
       if (user) {
         try {
-          await fetch(`/api/chats/${currentConversationId}`, {
+          await fetch(`/api/message/${currentConversationId}`, {
             method: "PUT",
             headers: {
               "Content-Type": "application/json",
@@ -298,7 +335,7 @@ export function ChatProvider({ children }) {
 
       if (user) {
         try {
-          await fetch(`/api/chats/${conversationId}`, {
+          await fetch(`/api/message/${conversationId}`, {
             method: "DELETE",
           });
         } catch (error) {
@@ -311,12 +348,15 @@ export function ChatProvider({ children }) {
 
     if (conversationId === currentConversationId) {
       const remaining = conversations.filter((c) => c.id !== conversationId);
-      if (remaining.length > 0) {
-        setCurrentConversationId(remaining[0].id);
-        setActiveMessages(remaining[0].messages);
-      } else {
-        setCurrentConversationId(null);
+      const emptyConversation = remaining.find((c) => c.messages.length === 0);
+
+      if (emptyConversation) {
+        setCurrentConversationId(emptyConversation.id);
         setActiveMessages([]);
+      } else if (remaining.length > 0) {
+        startNewConversation();
+      } else {
+        startNewConversation();
       }
     }
   };

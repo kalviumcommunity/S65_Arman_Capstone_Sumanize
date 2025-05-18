@@ -3,12 +3,11 @@
 import React, { useState, useEffect } from "react";
 import { ChatProvider } from "@/context/chat-context";
 import { useAuth } from "@/context/auth-context";
+import { useChat } from "@/context/chat-context";
 import { toast } from "sonner";
-import { Spinner } from "@phosphor-icons/react";
 import Sidebar from "@/components/summarize/sidebar";
 import Conversation from "@/components/summarize/conversation";
 import { AuthModal } from "@/components/auth/auth-modal";
-import { Button } from "@/components/ui/button";
 import AccountMenu from "@/components/summarize/account";
 import { motion } from "framer-motion";
 
@@ -18,14 +17,24 @@ function SummarizeContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalTab, setAuthModalTab] = useState("login");
   const { user, isLoading } = useAuth();
+  const { conversations, startNewConversation } = useChat();
 
   useEffect(() => {
-    const saved = localStorage.getItem("sumanize_sidebar_width");
+    const saved = localStorage.getItem("sumanize-sidebar-width");
     if (saved) setSidebarWidth(parseInt(saved, 10));
   }, []);
 
+  // useEffect(() => {
+  //   if (
+  //     conversations.length === 0 ||
+  //     !conversations.some((c) => c.messages.length === 0)
+  //   ) {
+  //     startNewConversation();
+  //   }
+  // }, [conversations, startNewConversation]);
+
   useEffect(() => {
-    localStorage.setItem("sumanize_sidebar_width", sidebarWidth.toString());
+    localStorage.setItem("sumanize-sidebar-width", sidebarWidth.toString());
   }, [sidebarWidth]);
 
   useEffect(() => {
@@ -93,11 +102,17 @@ function SummarizeContent() {
   return (
     <>
       <motion.div
-        className="bg-neutral-900 min-h-screen flex h-screen relative"
+        className={`bg-neutral-900 min-h-screen flex h-screen relative ${isAuthModalOpen ? "blur-md" : ""}`}
         initial="hidden"
         animate="visible"
         variants={fadeIn}
       >
+        {user && (
+          <div className="absolute top-6 right-8 z-30">
+            <AccountMenu user={user} />
+          </div>
+        )}
+
         <Sidebar
           selectedIds={selectedIds}
           setSelectedIds={setSelectedIds}
@@ -110,21 +125,6 @@ function SummarizeContent() {
           setSelectedIds={setSelectedIds}
           sidebarWidth={sidebarWidth}
         />
-
-        {/* Authentication UI */}
-        <div className="absolute top-4 right-4 z-50">
-          {user ? (
-            <AccountMenu user={user} />
-          ) : (
-            <Button
-              variant="secondary"
-              className="bg-neutral-300 hover:bg-neutral-400 text-neutral-900 cursor-pointer transition-colors duration-300 ease-in-out"
-              onClick={() => openAuthModal("login")}
-            >
-              Get Started
-            </Button>
-          )}
-        </div>
       </motion.div>
 
       <AuthModal
