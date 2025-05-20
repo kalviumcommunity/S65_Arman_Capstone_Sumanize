@@ -28,7 +28,7 @@ export async function PUT(request, { params }) {
     { text, summary },
     { new: true },
   );
-  
+
   if (!updated)
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(updated);
