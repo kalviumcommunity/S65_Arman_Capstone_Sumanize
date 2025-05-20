@@ -48,7 +48,7 @@ function SummarizeContent() {
     const handleShowAuthToast = () => {
       toast.info("Sign up to save your conversations", {
         action: {
-          label: "Sign Up",
+          label: "Get Started",
           onClick: () => openAuthModal("register"),
         },
       });
