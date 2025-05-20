@@ -2,9 +2,9 @@
 
 Sumanize is a versatile text summarization tool that creates concise, accurate summaries from articles, PDFs, documents and YouTube videos. It includes an interactive chat for asking questions about the content and a feature to quickly humanize AI-generated text, making summaries natural and easy to read.
 
-### Live Server URL -
+[Client URL](https://sumanize.vercel.app) - Opens the full fledged app
 
-https://sumanize.vercel.app/api/auth/me
+[Server URL](https://sumanize.vercel.app/api/auth/me) - Opens Next's API routes 
 
 ### Key Features:
 
