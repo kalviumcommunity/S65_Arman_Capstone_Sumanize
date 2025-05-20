@@ -51,7 +51,6 @@ export async function POST(req) {
       email: user.email,
       createdAt: user.createdAt,
     };
-
     return NextResponse.json({ user: userData });
   } catch (error) {
     console.error("Login error:", error);

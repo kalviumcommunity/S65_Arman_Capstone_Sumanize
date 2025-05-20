@@ -23,13 +23,12 @@ export async function POST(req) {
 
     const user = new User({ email, password });
     await user.save();
-
+    
     const userData = {
       id: user._id,
       email: user.email,
       createdAt: user.createdAt,
     };
-
     return NextResponse.json({ user: userData }, { status: 201 });
   } catch (error) {
     console.error("Registration error:", error);
