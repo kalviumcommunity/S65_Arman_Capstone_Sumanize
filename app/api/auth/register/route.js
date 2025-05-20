@@ -23,7 +23,7 @@ export async function POST(req) {
 
     const user = new User({ email, password });
     await user.save();
-    
+
     const userData = {
       id: user._id,
       email: user.email,
