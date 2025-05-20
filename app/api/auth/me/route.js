@@ -11,6 +11,7 @@ export async function GET() {
     return NextResponse.json({ user });
   } catch (error) {
     console.error("Error in /api/auth/me:", error);
+    
     return NextResponse.json({ error: "Failed to get user" }, { status: 500 });
   }
 }
