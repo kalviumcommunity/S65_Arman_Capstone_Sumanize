@@ -204,7 +204,7 @@ export default function Sidebar({
 
       <div className="absolute bottom-4 left-0 w-full px-4 z-20 flex justify-center">
         <button
-          onClick={() => router.push("/plan")}
+          onClick={() => router.push("/premium")}
           className="w-full max-w-sm rounded-md overflow-hidden bg-neutral-900 text-neutral-300 transition cursor-pointer"
           style={{ display: "block" }}
         >

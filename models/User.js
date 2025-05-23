@@ -1,31 +1,15 @@
 import mongoose from "mongoose";
-import bcrypt from "bcryptjs";
 
-const UserSchema = new mongoose.Schema({
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-    lowercase: true,
-  },
-  password: { type: String, required: true },
-  createdAt: { type: Date, default: Date.now },
+const userSchema = new mongoose.Schema({
+  email: { type: String, unique: true, required: true },
+  isVerified: { type: Boolean, default: false },
+  verificationCode: { type: String },
+  verificationCodeExpires: { type: Date },
+  isPremium: { type: Boolean, default: false },
+  subscriptionId: { type: String },
+  customerId: { type: String },
+  currentPeriodEnd: { type: Date },
+  cancelAtPeriodEnd: { type: Boolean, default: false },
 });
 
-UserSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next();
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
-});
-
-UserSchema.methods.comparePassword = async function (candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
-
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+export default mongoose.models.User || mongoose.model("User", userSchema);

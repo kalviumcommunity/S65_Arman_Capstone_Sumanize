@@ -1,5 +1,7 @@
+import { ReactScan } from "@/lib/react-scan";
+import React from "react";
 import "@/presentation/globals.css";
-import { Toaster } from "sonner";
+import { Toaster as SonnerToaster } from "sonner";
 import { AuthProvider } from "@/context/auth-context";
 import { funnelSans, geistMono, instrumentSerif } from "@/app/fonts";
 
@@ -12,6 +14,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <ReactScan />
       <body
         className={[
           funnelSans.variable,
@@ -22,7 +25,7 @@ export default function RootLayout({ children }) {
       >
         <AuthProvider>
           {children}
-          <Toaster
+          <SonnerToaster
             position="bottom-right"
             duration={5000}
             visibleToasts={1}

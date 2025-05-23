@@ -1,103 +1,99 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { setCookie, destroyCookie } from "nookies";
 
-const AuthContext = createContext({
-  user: null,
-  isLoading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {},
-});
+const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const router = useRouter();
+  const [pendingVerification, setPendingVerification] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
 
   useEffect(() => {
-    const checkAuth = async () => {
+    const checkSession = async () => {
       try {
-        const res = await fetch("/api/auth/me");
-        if (res.ok) {
-          const data = await res.json();
+        const res = await fetch("/api/auth/session");
+        const data = await res.json();
+        if (data.user) {
           setUser(data.user);
         }
       } catch (error) {
-        console.error("Error checking auth:", error);
-      } finally {
-        setIsLoading(false);
+        console.error("Error checking session:", error);
       }
     };
 
-    checkAuth();
-  }, [router]);
+    checkSession();
+  }, []);
 
-  const login = async (email, password) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      setUser(data.user);
+  const login = async (email) => {
+    const res = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      body: JSON.stringify({ email }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    if (data.success) {
+      setPendingVerification({ email });
       return { success: true };
-    } catch (error) {
-      return { success: false, error: error.message };
-    } finally {
-      setIsLoading(false);
     }
+    return { success: false, error: data.error };
   };
 
-  const register = async (email, password) => {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+  const register = async (email) => {
+    return login(email);
+  };
+
+  const verifyEmail = async (email, otp) => {
+    setIsVerifying(true);
+    const res = await fetch("/api/auth/verify-otp", {
+      method: "POST",
+      body: JSON.stringify({ email, otp }),
+      headers: { "Content-Type": "application/json" },
+    });
+    const data = await res.json();
+    setIsVerifying(false);
+    if (data.success) {
+      const userData = {
+        email,
+        isPremium: data.user?.isPremium || false,
+        subscriptionEnds: data.user?.currentPeriodEnd || null,
+      };
+      setUser(userData);
+      setPendingVerification(null);
+      setCookie(null, "sumanize-token", data.token, {
+        path: "/",
+        maxAge: 7 * 24 * 60 * 60, // 7 days
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
       });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Registration failed");
-      }
-
-      return login(email, password);
-    } catch (error) {
-      setIsLoading(false);
-      return { success: false, error: error.message };
+      return { success: true };
     }
+    return { success: false, error: data.error };
   };
 
-  const logout = async () => {
-    setIsLoading(true);
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      setUser(null);
-      router.push("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  const logout = () => {
+    setUser(null);
+    destroyCookie(null, "sumanize-token");
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        login,
+        register,
+        verifyEmail,
+        pendingVerification,
+        isVerifying,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-export const useAuth = () => useContext(AuthContext);
+export function useAuth() {
+  return useContext(AuthContext);
+}

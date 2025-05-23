@@ -1,23 +1,44 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/context/auth-context";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { StarFour, ArrowRight, WarningCircle } from "@phosphor-icons/react";
+import { StarFour, ArrowRight, Check } from "@phosphor-icons/react";
 import { Separator } from "@/components/ui/separator";
-import { GithubIcon, GoogleIcon, TwitterIcon } from "@/components/auth/icons";
+import { GithubIcon, GoogleIcon } from "@/components/auth/icons";
 import { motion, AnimatePresence } from "framer-motion";
 
 export function AuthModal({ isOpen, onClose, defaultTab = "login" }) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [authMode, setAuthMode] = useState(defaultTab);
-  const { login, register } = useAuth();
+  const [step, setStep] = useState("initial"); // initial, verification
+
+  const { login, register, verifyEmail, pendingVerification, isVerifying } =
+    useAuth();
+
+  // Reset state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setStep("initial");
+      setEmail("");
+      setName("");
+      setVerificationCode("");
+    }
+  }, [isOpen]);
+
+  // Set email from pending verification if available
+  useEffect(() => {
+    if (pendingVerification && pendingVerification.email) {
+      setEmail(pendingVerification.email);
+      setStep("verification");
+    }
+  }, [pendingVerification]);
 
   const fadeIn = {
     hidden: {
@@ -42,32 +63,50 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }) {
     },
   };
 
-  const handleGoogleAuth = async () => {
-    toast.info("Google authentication coming soon");
+  const initiateGithubLogin = () => {
+    const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/callback/github`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+    window.location.href = githubAuthUrl;
   };
 
-  const handleGithubAuth = async () => {
-    toast.info("Github authentication coming soon");
-  };
-
-  const handleTwitterAuth = async () => {
-    toast.info("Twitter authentication coming soon");
+  const initiateGoogleLogin = () => {
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    const redirectUri = `${window.location.origin}/auth/callback/google`;
+    const scope = "email profile";
+    const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+    window.location.href = googleAuthUrl;
   };
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
+
+    if (step === "verification") {
+      if (!verificationCode.trim()) {
+        toast.error("Please enter the verification code");
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const result = await verifyEmail(email, verificationCode);
+        if (result.success) {
+          toast.success("Authentication successful");
+          onClose();
+        } else {
+          toast.error(result.error || "Verification failed");
+        }
+      } catch (error) {
+        toast.error("Verification error: " + error.message);
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Initial step
     if (!email.trim()) {
       toast.error("Please enter your email");
-      return;
-    }
-
-    if (!showPassword) {
-      setShowPassword(true);
-      return;
-    }
-
-    if (!password.trim()) {
-      toast.error("Please enter your password");
       return;
     }
 
@@ -76,18 +115,14 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }) {
     try {
       let result;
       if (authMode === "login") {
-        result = await login(email, password);
+        result = await login(email);
       } else {
-        result = await register(email, password);
+        result = await register(email, name);
       }
 
       if (result.success) {
-        toast.success(
-          authMode === "login"
-            ? "Logged in successfully"
-            : "Email verification coming soon",
-        );
-        onClose();
+        setStep("verification");
+        toast.success("Verification code sent to your email");
       } else {
         toast.error(result.error || "Authentication failed");
       }
@@ -100,7 +135,7 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }) {
 
   const toggleAuthMode = () => {
     setAuthMode(authMode === "login" ? "signup" : "login");
-    setShowPassword(false);
+    setStep("initial");
   };
 
   const VisuallyHidden = ({ children }) => {
@@ -145,100 +180,122 @@ export function AuthModal({ isOpen, onClose, defaultTab = "login" }) {
                     Sumanize
                   </h1>
                   <p className="mt-1 text-sm text-neutral-400 text-center max-w-xs">
-                    {authMode === "login"
-                      ? "Enter your email and password to sign in, or continue with Github, Google, or Twitter."
-                      : "Enter your email and create a password, or sign up by continuing with Github, Google, or Twitter."}
+                    {step === "verification"
+                      ? "Enter the verification code sent to your email."
+                      : authMode === "login"
+                        ? "Enter your email to sign in with a magic link, or continue with GitHub or Google."
+                        : "Enter your email to create an account, or sign up by continuing with GitHub or Google."}
                   </p>
                 </div>
 
-                <form onSubmit={handleEmailAuth} className="w-full">
-                  {!showPassword ? (
-                    <Input
-                      type="email"
-                      placeholder="Enter a valid email"
-                      className="w-full bg-transparent border-neutral-800 text-neutral-300 h-10 rounded-md mb-3"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
+                <form onSubmit={handleEmailAuth} className="w-full space-y-3">
+                  {step === "initial" ? (
+                    <>
+                      <Input
+                        type="email"
+                        placeholder="Enter your email"
+                        className="w-full bg-transparent border-neutral-800 text-neutral-300 h-10 rounded-md"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </>
                   ) : (
                     <Input
-                      type="password"
-                      placeholder="Enter a strong password"
-                      className="w-full bg-neutral-800 border-neutral-700 text-white h-10 rounded-md mb-3"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      type="text"
+                      placeholder="Enter verification code"
+                      className="w-full bg-neutral-800 border-neutral-700 text-white h-10 rounded-md"
+                      value={verificationCode}
+                      onChange={(e) => setVerificationCode(e.target.value)}
                     />
                   )}
+
                   <Button
                     type="submit"
                     className="w-full bg-neutral-800 hover:bg-neutral-800/50 text-neutral-300 rounded-md h-10 flex items-center justify-center gap-2 cursor-pointer"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isVerifying}
                   >
-                    {showPassword
-                      ? authMode === "login"
-                        ? "Get Started"
-                        : "Get Started"
-                      : "Continue with email"}
-                    <ArrowRight size={24} weight="bold" />
+                    {isSubmitting || isVerifying ? (
+                      "Processing..."
+                    ) : step === "verification" ? (
+                      <>
+                        Verify
+                        <Check size={20} weight="bold" />
+                      </>
+                    ) : (
+                      <>
+                        Continue with email
+                        <ArrowRight size={20} weight="bold" />
+                      </>
+                    )}
                   </Button>
                 </form>
 
-                <Separator className="w-full bg-neutral-600 rounded-md" />
+                {step === "initial" && (
+                  <>
+                    <Separator className="w-full bg-neutral-600 rounded-md" />
 
-                <div className="w-full grid grid-cols-3 gap-4">
-                  <Button
-                    variant="icon"
-                    className="flex items-center justify-center h-10 p-0 bg-neutral-300 hover:bg-neutral-400 text-neutral-950 rounded-md text-base transition-colors duration-300 ease-in-out cursor-pointer"
-                    onClick={handleGithubAuth}
-                    aria-label="Continue with Github"
-                  >
-                    <GithubIcon size={24} />
-                  </Button>
-
-                  <Button
-                    variant="icon"
-                    className="flex items-center justify-center h-10 p-0 bg-neutral-300 hover:bg-neutral-400 text-neutral-950 rounded-md text-base transition-colors duration-300 ease-in-out cursor-pointer"
-                    onClick={handleGoogleAuth}
-                    aria-label="Continue with Google"
-                  >
-                    <GoogleIcon size={24} />
-                  </Button>
-
-                  <Button
-                    variant="icon"
-                    className="flex items-center justify-center h-10 p-0 bg-neutral-300 hover:bg-neutral-400 text-neutral-950 rounded-md text-base transition-colors duration-300 ease-in-out cursor-pointer"
-                    onClick={handleTwitterAuth}
-                    aria-label="Continue with Twitter"
-                  >
-                    <TwitterIcon size={24} />
-                  </Button>
-                </div>
-
-                <div className="text-center text-sm text-neutral-400">
-                  {authMode === "login" ? (
-                    <>
-                      Don't have an account?{" "}
+                    <div className="w-full grid grid-cols-2 gap-4">
                       <Button
-                        onClick={toggleAuthMode}
-                        variant="link"
-                        className="px-0 text-neutral-300 cursor-pointer"
+                        variant="icon"
+                        className="flex items-center justify-center h-10 p-0 bg-neutral-300 hover:bg-neutral-400 text-neutral-950 rounded-md text-base transition-colors duration-300 ease-in-out cursor-pointer"
+                        onClick={initiateGithubLogin}
+                        aria-label="Continue with Github"
                       >
-                        Create one
+                        <GithubIcon size={24} />
                       </Button>
-                    </>
-                  ) : (
-                    <>
-                      Already have an account?{" "}
+
                       <Button
-                        onClick={toggleAuthMode}
-                        variant="link"
-                        className="px-0 text-neutral-300 cursor-pointer"
+                        variant="icon"
+                        className="flex items-center justify-center h-10 p-0 bg-neutral-300 hover:bg-neutral-400 text-neutral-950 rounded-md text-base transition-colors duration-300 ease-in-out cursor-pointer"
+                        onClick={initiateGoogleLogin}
+                        aria-label="Continue with Google"
                       >
-                        Get inside
+                        <GoogleIcon size={24} />
                       </Button>
-                    </>
-                  )}
-                </div>
+                    </div>
+                  </>
+                )}
+
+                {step === "initial" && (
+                  <div className="text-center text-sm text-neutral-400">
+                    {authMode === "login" ? (
+                      <>
+                        Don't have an account?{" "}
+                        <Button
+                          onClick={toggleAuthMode}
+                          variant="link"
+                          className="px-0 text-neutral-300 cursor-pointer"
+                        >
+                          Create one
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        Already have an account?{" "}
+                        <Button
+                          onClick={toggleAuthMode}
+                          variant="link"
+                          className="px-0 text-neutral-300 cursor-pointer"
+                        >
+                          Get inside
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {step === "verification" && (
+                  <div className="text-center text-sm text-neutral-400">
+                    Didn't receive the code?{" "}
+                    <Button
+                      onClick={() => setStep("initial")}
+                      variant="link"
+                      className="px-0 text-neutral-300 cursor-pointer"
+                    >
+                      Try again
+                    </Button>
+                  </div>
+                )}
               </div>
             </DialogContent>
           </motion.div>
