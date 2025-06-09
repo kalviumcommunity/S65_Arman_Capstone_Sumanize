@@ -4,10 +4,8 @@ import {
   validateFile,
 } from "../../utils/content-extractor.js";
 
-export const runtime = "edge";
-
 const CONFIG = {
-  MODEL_NAME: "gemini-2.0-flash-exp",
+  MODEL_NAME: "gemini-1.5-flash-latest",
   MAX_TOKENS: 8192,
   TEMPERATURE: 0.3,
   TOP_P: 0.8,
@@ -43,7 +41,7 @@ const rateLimitMap = new Map();
 function checkRateLimit(identifier) {
   const now = Date.now();
   const windowMs = 60000;
-  const maxRequests = 10; // Higher limit for text files
+  const maxRequests = 10;
 
   const requests = rateLimitMap.get(identifier) || [];
   const validRequests = requests.filter((time) => now - time < windowMs);
@@ -85,14 +83,12 @@ export async function POST(req) {
       return createErrorResponse("No file provided.", 400);
     }
 
-    // Validate file
     try {
-      validateFile(file, 10); // 10MB limit for documents
+      validateFile(file, 10);
     } catch (error) {
       return createErrorResponse("File validation failed", 400, error.message);
     }
 
-    // Get file extension
     const fileExtension = file.name.toLowerCase().split(".").pop();
     const supportedFormats = ["txt", "json", "csv", "md", "html", "htm"];
 
@@ -104,7 +100,6 @@ export async function POST(req) {
       );
     }
 
-    // Extract text from document
     let extractedText;
     try {
       const arrayBuffer = await file.arrayBuffer();
@@ -125,7 +120,6 @@ export async function POST(req) {
       );
     }
 
-    // Truncate text if too long
     const maxTextLength = 45000;
     if (extractedText.length > maxTextLength) {
       extractedText =
@@ -155,7 +149,6 @@ export async function POST(req) {
       ],
     });
 
-    // Customize prompt based on file type
     let promptContext = "";
     switch (fileExtension) {
       case "json":
