@@ -1,18 +1,21 @@
+// app/api/utils/content-extractor.js
+
 import { YoutubeTranscript } from "youtube-transcript";
+import pdf from "pdf-parse"; // Using static import for Node.js environment
+
+// --- YouTube Transcript Extraction ---
 
 export async function extractYouTubeTranscript(videoUrl) {
   try {
-    // Extract video ID from various YouTube URL formats
     const videoId = extractVideoId(videoUrl);
     if (!videoId) {
       throw new Error("Invalid YouTube URL");
     }
 
-    // Try multiple transcript extraction methods
     let transcript = null;
     let extractionMethod = "";
 
-    // Method 1: Try youtube-transcript library (most reliable)
+    // Method 1: Try the standard library call
     try {
       const transcriptParts = await YoutubeTranscript.fetchTranscript(videoUrl);
       if (transcriptParts && transcriptParts.length > 0) {
@@ -23,7 +26,7 @@ export async function extractYouTubeTranscript(videoUrl) {
       console.log("youtube-transcript failed:", error.message);
     }
 
-    // Method 2: Try with different language codes if first method fails
+    // Method 2: Fallback to English (US) if first method fails
     if (!transcript || transcript.length < 50) {
       try {
         const transcriptParts = await YoutubeTranscript.fetchTranscript(
@@ -42,7 +45,7 @@ export async function extractYouTubeTranscript(videoUrl) {
       }
     }
 
-    // Method 3: Try manual extraction from YouTube's API
+    // Method 3: Fallback to manual extraction if library fails
     if (!transcript || transcript.length < 50) {
       try {
         transcript = await extractTranscriptManual(videoId);
@@ -54,7 +57,6 @@ export async function extractYouTubeTranscript(videoUrl) {
       }
     }
 
-    // Final validation
     if (!transcript || transcript.length < 50) {
       throw new Error(
         "No transcript available for this video. The video may not have captions enabled, may be private, or may not support transcript extraction.",
@@ -71,12 +73,11 @@ export async function extractYouTubeTranscript(videoUrl) {
 }
 
 async function extractTranscriptManual(videoId) {
-  // Try different transcript URLs that YouTube uses
   const transcriptUrls = [
     `https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`,
     `https://www.youtube.com/api/timedtext?lang=en-US&v=${videoId}`,
     `https://www.youtube.com/api/timedtext?lang=en-GB&v=${videoId}`,
-    `https://www.youtube.com/api/timedtext?v=${videoId}`, // Auto-detect language
+    `https://www.youtube.com/api/timedtext?v=${videoId}`,
   ];
 
   for (const url of transcriptUrls) {
@@ -111,7 +112,6 @@ async function extractTranscriptManual(videoId) {
 
 function parseTranscriptXML(xmlText) {
   try {
-    // Parse XML transcript from YouTube's timedtext API
     const textRegex = /<text[^>]*>([^<]*)<\/text>/g;
     let match;
     let transcript = "";
@@ -138,10 +138,9 @@ function parseTranscriptXML(xmlText) {
 }
 
 function extractVideoId(url) {
-  // Support various YouTube URL formats including shorts, embeds, etc.
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
-    /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
+    /^([a-zA-Z0-9_-]{11})$/,
   ];
 
   for (const pattern of patterns) {
@@ -152,39 +151,73 @@ function extractVideoId(url) {
   return null;
 }
 
+// --- Document & PDF Extraction ---
+
+/**
+ * Extracts text from a PDF file using the pdf-parse library.
+ * @param {File} file - The PDF file object from the form data.
+ * @returns {Promise<string>} The extracted text content.
+ */
 export async function extractPDFText(file) {
   try {
-    // Try using pdf-parse library first
-    const pdf = await import("pdf-parse").then(
-      (module) => module.default || module,
-    );
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
     const pdfData = await pdf(buffer);
     let text = pdfData.text;
 
-    if (text && text.length > 50) {
-      // Clean up the extracted text
-      text = text.replace(/\s+/g, " ").trim();
-      return text;
+    if (text && text.length > 20) {
+      return text.replace(/\s+/g, " ").trim();
     }
 
-    throw new Error("No readable text found in PDF");
+    throw new Error(
+      "No readable text found in PDF. The document may be image-based or encrypted.",
+    );
   } catch (error) {
+    console.error("PDF Extraction Error:", error);
     throw new Error(`Failed to extract PDF text: ${error.message}`);
   }
 }
 
-export function validateFile(file, maxSizeMB = 10) {
+/**
+ * Extracts text from simple document formats like TXT, MD, CSV.
+ * @param {ArrayBuffer} arrayBuffer - The file content as an ArrayBuffer.
+ * @param {string} fileName - The name of the file to determine its type.
+ * @returns {Promise<string>} The extracted text content.
+ */
+export async function extractDocumentText(arrayBuffer, fileName) {
+  try {
+    const decoder = new TextDecoder("utf-8");
+    const text = decoder.decode(arrayBuffer);
+    return text.trim();
+  } catch (error) {
+    throw new Error(`Failed to decode document text: ${error.message}`);
+  }
+}
+
+/**
+ * Validates a file based on size and allowed extensions.
+ * @param {File} file - The file object to validate.
+ * @param {number} maxSizeMB - The maximum allowed file size in megabytes.
+ * @param {string[]} allowedExtensions - An array of allowed file extensions (e.g., ['pdf', 'txt']).
+ * @returns {boolean} True if the file is valid.
+ * @throws {Error} If the file is invalid.
+ */
+export function validateFile(file, maxSizeMB, allowedExtensions) {
   const maxSize = maxSizeMB * 1024 * 1024;
 
   if (file.size > maxSize) {
-    throw new Error(`File size exceeds ${maxSizeMB}MB limit`);
+    throw new Error(`File size exceeds the ${maxSizeMB}MB limit.`);
   }
 
-  if (!file.name.toLowerCase().endsWith(".pdf")) {
-    throw new Error("Only PDF files are supported");
+  const fileExtension = file.name.toLowerCase().split(".").pop();
+
+  if (!allowedExtensions.includes(fileExtension)) {
+    throw new Error(
+      `Unsupported file format. Supported formats are: ${allowedExtensions.join(
+        ", ",
+      )}`,
+    );
   }
 
   return true;
