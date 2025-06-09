@@ -1,6 +1,9 @@
+// app/api/document/upload/route.js
+
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   extractDocumentText,
+  extractPDFText,
   validateFile,
 } from "../../utils/content-extractor.js";
 
@@ -55,6 +58,17 @@ function checkRateLimit(identifier) {
   return true;
 }
 
+export async function OPTIONS(req) {
+  return new Response(null, {
+    status: 200,
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    },
+  });
+}
+
 export async function POST(req) {
   try {
     const clientId = req.headers.get("x-forwarded-for") || "anonymous";
@@ -70,9 +84,24 @@ export async function POST(req) {
       return createErrorResponse("API key not configured.", 500);
     }
 
-    const formData = await req.formData().catch(() => null);
-    if (!formData) {
-      return createErrorResponse("Invalid form data.", 400);
+    const contentType = req.headers.get("content-type");
+    if (!contentType || !contentType.includes("multipart/form-data")) {
+      return createErrorResponse(
+        "Invalid content type. Please use multipart/form-data for file uploads.",
+        400,
+        `Received content-type: ${contentType || "none"}`,
+      );
+    }
+
+    let formData;
+    try {
+      formData = await req.formData();
+    } catch (error) {
+      return createErrorResponse(
+        "Failed to parse form data",
+        400,
+        error.message,
+      );
     }
 
     const file = formData.get("file");
@@ -83,30 +112,27 @@ export async function POST(req) {
       return createErrorResponse("No file provided.", 400);
     }
 
+    const supportedFormats = ["pdf", "txt", "csv", "md"];
+    const fileExtension = file.name.toLowerCase().split(".").pop();
+    const sizeLimit = fileExtension === "pdf" ? 15 : 10;
+
     try {
-      validateFile(file, 10);
+      validateFile(file, sizeLimit, supportedFormats);
     } catch (error) {
       return createErrorResponse("File validation failed", 400, error.message);
     }
 
-    const fileExtension = file.name.toLowerCase().split(".").pop();
-    const supportedFormats = ["txt", "json", "csv", "md", "html", "htm"];
-
-    if (!supportedFormats.includes(fileExtension)) {
-      return createErrorResponse(
-        "Unsupported file format",
-        400,
-        `Supported formats: ${supportedFormats.join(", ")}`,
-      );
-    }
-
     let extractedText;
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      extractedText = await extractDocumentText(arrayBuffer, file.name);
+      if (fileExtension === "pdf") {
+        extractedText = await extractPDFText(file);
+      } else {
+        const arrayBuffer = await file.arrayBuffer();
+        extractedText = await extractDocumentText(arrayBuffer, file.name);
+      }
     } catch (error) {
       return createErrorResponse(
-        "Failed to extract text from document",
+        `Failed to extract text from ${fileExtension.toUpperCase()} document`,
         400,
         error.message,
       );
@@ -116,7 +142,9 @@ export async function POST(req) {
       return createErrorResponse(
         "No readable text found in document",
         400,
-        "The document appears to be empty or contains no readable text.",
+        fileExtension === "pdf"
+          ? "The PDF may be image-based, encrypted, or contain no readable text."
+          : "The document appears to be empty or contains no readable text.",
       );
     }
 
@@ -151,9 +179,9 @@ export async function POST(req) {
 
     let promptContext = "";
     switch (fileExtension) {
-      case "json":
+      case "pdf":
         promptContext =
-          "This is JSON data. Focus on the structure, key-value relationships, and important data patterns.";
+          "This is a PDF document. Focus on the main content, structure, key findings, and conclusions.";
         break;
       case "csv":
         promptContext =
@@ -163,11 +191,7 @@ export async function POST(req) {
         promptContext =
           "This is Markdown documentation. Focus on the structure, headings, and main content sections.";
         break;
-      case "html":
-      case "htm":
-        promptContext =
-          "This is HTML content. Focus on the main textual content and structure.";
-        break;
+      case "txt":
       default:
         promptContext =
           "This is a text document. Focus on the main themes, key points, and overall message.";
@@ -191,26 +215,71 @@ Focus on:
       contents: [{ role: "user", parts: [{ text: prompt }] }],
     };
 
-    const result = await model.generateContent(generationArgs);
-    const summary = result.response.text();
+    const stream = await model.generateContentStream(generationArgs);
 
-    const responseData = {
-      summary,
-      fileName: file.name,
-      fileType: fileExtension.toUpperCase(),
-      fileSize: file.size,
-      processedAt: new Date().toISOString(),
-      extractedTextLength: extractedText.length,
-    };
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        let fullSummary = "";
 
-    if (includeExtractedText) {
-      responseData.extractedText = extractedText;
-    }
+        try {
+          const metaData = {
+            status: "started",
+            fileName: file.name,
+            fileType: fileExtension.toUpperCase(),
+            fileSize: file.size,
+            extractedTextLength: extractedText.length,
+            processedAt: new Date().toISOString(),
+          };
 
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
+          if (includeExtractedText) {
+            metaData.extractedText = extractedText;
+          }
+
+          const startData = `data: ${JSON.stringify(metaData)}\n\n`;
+          controller.enqueue(encoder.encode(startData));
+
+          for await (const chunk of stream.stream) {
+            if (chunk?.text) {
+              const text =
+                typeof chunk.text === "function" ? chunk.text() : chunk.text;
+              if (text && text.trim()) {
+                fullSummary += text;
+                const sseFormattedData = `data: ${JSON.stringify({
+                  text,
+                })}\n\n`;
+                controller.enqueue(encoder.encode(sseFormattedData));
+              }
+            }
+          }
+
+          const endData = `data: ${JSON.stringify({
+            status: "completed",
+            summary: fullSummary,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(endData));
+        } catch (streamError) {
+          console.error("Streaming error:", streamError);
+          const sseError = `data: ${JSON.stringify({
+            error: "Error processing stream from AI.",
+            details: streamError.message,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(sseError));
+        } finally {
+          controller.close();
+        }
+      },
+      cancel() {
+        console.log("Stream cancelled by client");
+      },
+    });
+
+    return new Response(readableStream, {
       headers: {
-        "Content-Type": "application/json",
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "POST",
         "Access-Control-Allow-Headers": "Content-Type",

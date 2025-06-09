@@ -1,35 +1,85 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractYouTubeTranscript } from "../../utils/content-extractor.js";
 
+const CONFIG = {
+  MODEL_NAME: "gemini-1.5-flash-latest",
+  MAX_TOKENS: 8192,
+  TEMPERATURE: 0.3,
+  TOP_P: 0.8,
+  TOP_K: 40,
+};
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+const SYSTEM_INSTRUCTION_TEXT = `You are Sumanize, an AI that creates concise, clear summaries of YouTube video content. 
+
+When summarizing:
+- Extract the main topics and key points
+- Use bullet points for clarity
+- Include important insights and takeaways
+- Keep it comprehensive but digestible
+- Maintain a friendly, professional tone`;
+
+function createErrorResponse(
+  message,
+  status = 500,
+  details = null,
+  suggestions = null,
+  helpfulVideos = null,
+) {
+  const errorObj = { error: message };
+  if (details) errorObj.details = details;
+  if (suggestions) errorObj.suggestions = suggestions;
+  if (helpfulVideos) errorObj.helpfulVideos = helpfulVideos;
+
+  return new Response(JSON.stringify(errorObj), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+const rateLimitMap = new Map();
+function checkRateLimit(identifier) {
+  const now = Date.now();
+  const windowMs = 60000;
+  const maxRequests = 10;
+
+  const requests = rateLimitMap.get(identifier) || [];
+  const validRequests = requests.filter((time) => now - time < windowMs);
+
+  if (validRequests.length >= maxRequests) {
+    return false;
+  }
+
+  validRequests.push(now);
+  rateLimitMap.set(identifier, validRequests);
+  return true;
+}
 
 export async function POST(req) {
   try {
-    // Check if API key is configured
-    if (!process.env.GEMINI_API_KEY) {
-      return Response.json(
-        { error: "API key not configured" },
-        { status: 500 },
+    const clientId = req.headers.get("x-forwarded-for") || "anonymous";
+    if (!checkRateLimit(clientId)) {
+      return createErrorResponse(
+        "Rate limit exceeded. Please try again later.",
+        429,
       );
     }
 
-    // Parse request body
+    if (!process.env.GEMINI_API_KEY) {
+      return createErrorResponse("API key not configured", 500);
+    }
+
     const { youtubeUrl } = await req.json();
 
-    // Validate input
     if (!youtubeUrl || typeof youtubeUrl !== "string") {
-      return Response.json(
-        { error: "YouTube URL is required" },
-        { status: 400 },
-      );
+      return createErrorResponse("YouTube URL is required", 400);
     }
 
-    // Extract transcript from YouTube video
     let transcript;
     try {
       transcript = await extractYouTubeTranscript(youtubeUrl.trim());
     } catch (error) {
-      // Provide helpful error messages based on the type of failure
       let suggestions = [];
 
       if (error.message.includes("Invalid YouTube URL")) {
@@ -57,103 +107,162 @@ export async function POST(req) {
         ];
       }
 
-      return Response.json(
-        {
-          error: "Failed to extract video transcript",
-          details: error.message,
-          suggestions: suggestions,
-          helpfulVideos: [
-            "https://www.youtube.com/watch?v=dQw4w9WgXcQ - Rick Astley (has captions)",
-            "Any TED Talk video (they usually have captions)",
-            "News videos from major channels (BBC, CNN, etc.)",
-            "Educational channels (Khan Academy, Crash Course, etc.)",
-          ],
-        },
-        { status: 400 },
+      return createErrorResponse(
+        "Failed to extract video transcript",
+        400,
+        error.message,
+        suggestions,
+        [
+          "https://www.youtube.com/watch?v=dQw4w9WgXcQ - Rick Astley (has captions)",
+          "Any TED Talk video (they usually have captions)",
+          "News videos from major channels (BBC, CNN, etc.)",
+          "Educational channels (Khan Academy, Crash Course, etc.)",
+        ],
       );
     }
 
-    // Check if transcript is valid
     if (!transcript || transcript.length < 50) {
-      return Response.json(
-        {
-          error: "No sufficient transcript content found",
-          details:
-            "The video transcript is too short to generate a meaningful summary",
-          suggestions: [
-            "Try a longer video (at least 2-3 minutes)",
-            "Make sure the video has spoken content, not just music",
-          ],
-        },
-        { status: 400 },
+      return createErrorResponse(
+        "No sufficient transcript content found",
+        400,
+        "The video transcript is too short to generate a meaningful summary",
+        [
+          "Try a longer video (at least 2-3 minutes)",
+          "Make sure the video has spoken content, not just music",
+        ],
       );
     }
 
-    // Truncate if too long (keep under token limits)
     if (transcript.length > 40000) {
       transcript = transcript.substring(0, 40000) + "... [truncated]";
     }
 
-    // Configure Gemini model
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash-latest",
-      systemInstruction: `You are Sumanize, an AI that creates concise, clear summaries of YouTube video content. 
-
-When summarizing:
-- Extract the main topics and key points
-- Use bullet points for clarity
-- Include important insights and takeaways
-- Keep it comprehensive but digestible
-- Maintain a friendly, professional tone`,
+      model: CONFIG.MODEL_NAME,
+      systemInstruction: {
+        parts: [{ text: SYSTEM_INSTRUCTION_TEXT }],
+      },
+      generationConfig: {
+        maxOutputTokens: CONFIG.MAX_TOKENS,
+        temperature: CONFIG.TEMPERATURE,
+        topP: CONFIG.TOP_P,
+        topK: CONFIG.TOP_K,
+      },
+      safetySettings: [
+        {
+          category: "HARM_CATEGORY_HARASSMENT",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE",
+        },
+        {
+          category: "HARM_CATEGORY_HATE_SPEECH",
+          threshold: "BLOCK_MEDIUM_AND_ABOVE",
+        },
+      ],
     });
 
-    // Generate summary
     const prompt = `Please provide a comprehensive summary of this YouTube video transcript:
 
 ${transcript}
 
 Focus on the main topics, key insights, and important takeaways.`;
 
-    const result = await model.generateContent(prompt);
-    const summary = result.response.text();
+    const generationArgs = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+    };
 
-    // Return response
-    return Response.json({
-      summary,
-      youtubeUrl,
-      transcriptLength: transcript.length,
-      processedAt: new Date().toISOString(),
+    const stream = await model.generateContentStream(generationArgs);
+
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        let hasStarted = false;
+        let fullSummary = "";
+
+        try {
+          const metaData = {
+            status: "started",
+            youtubeUrl,
+            transcriptLength: transcript.length,
+            processedAt: new Date().toISOString(),
+          };
+
+          const startData = `data: ${JSON.stringify(metaData)}\n\n`;
+          controller.enqueue(encoder.encode(startData));
+
+          for await (const chunk of stream.stream) {
+            if (!hasStarted) {
+              hasStarted = true;
+            }
+
+            if (chunk?.text) {
+              const text =
+                typeof chunk.text === "function" ? chunk.text() : chunk.text;
+              if (text && text.trim()) {
+                fullSummary += text;
+                const sseFormattedData = `data: ${JSON.stringify({ text })}\n\n`;
+                controller.enqueue(encoder.encode(sseFormattedData));
+              }
+            }
+          }
+
+          const endData = `data: ${JSON.stringify({
+            status: "completed",
+            summary: fullSummary,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(endData));
+        } catch (streamError) {
+          console.error("Streaming error:", streamError);
+          const sseError = `data: ${JSON.stringify({
+            error: "Error processing stream from AI.",
+            details: streamError.message,
+          })}\n\n`;
+          controller.enqueue(encoder.encode(sseError));
+        } finally {
+          controller.close();
+        }
+      },
+      cancel() {
+        console.log("Stream cancelled by client");
+      },
+    });
+
+    return new Response(readableStream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Connection: "keep-alive",
+        "X-Accel-Buffering": "no",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "POST",
+        "Access-Control-Allow-Headers": "Content-Type",
+      },
     });
   } catch (error) {
     console.error("YouTube API Error:", error);
 
-    // Handle specific error types
+    let errorMessage = "Internal Server Error";
+    let statusCode = 500;
+
     if (error.message?.includes("API key not valid")) {
-      return Response.json(
-        {
-          error: "Invalid API Key",
-          details: "Please check your Gemini API key configuration",
-        },
-        { status: 401 },
-      );
+      errorMessage = "Invalid API Key. Please check your configuration.";
+      statusCode = 401;
+    } else if (
+      error.status === 404 ||
+      error.message?.includes("Could not find model")
+    ) {
+      errorMessage = `Model '${CONFIG.MODEL_NAME}' not found. Ensure it's available for your API key.`;
+      statusCode = 404;
+    } else if (error.status === 429) {
+      errorMessage = "API rate limit exceeded. Please try again later.";
+      statusCode = 429;
+    } else if (error.message?.includes("quota")) {
+      errorMessage = "API quota exceeded. Please check your billing settings.";
+      statusCode = 429;
+    } else if (error.message) {
+      errorMessage = error.message;
+      statusCode = error.status || 500;
     }
 
-    if (error.status === 429) {
-      return Response.json(
-        {
-          error: "Rate limit exceeded",
-          details: "Too many requests. Please try again later.",
-        },
-        { status: 429 },
-      );
-    }
-
-    return Response.json(
-      {
-        error: "Internal server error",
-        details: error.message,
-      },
-      { status: 500 },
-    );
+    return createErrorResponse(errorMessage, statusCode);
   }
 }
