@@ -1,8 +1,5 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { YoutubeTranscript } from "youtube-transcript";
 
-export const runtime = "edge";
-
-// YouTube transcript extraction using unofficial API
 export async function extractYouTubeTranscript(videoUrl) {
   try {
     // Extract video ID from various YouTube URL formats
@@ -11,69 +8,110 @@ export async function extractYouTubeTranscript(videoUrl) {
       throw new Error("Invalid YouTube URL");
     }
 
-    // Use YouTube transcript API endpoint
-    const transcriptUrl = `https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`;
+    // Try multiple transcript extraction methods
+    let transcript = null;
+    let extractionMethod = "";
 
-    const response = await fetch(transcriptUrl);
-    if (!response.ok) {
-      // Try alternative method - get video info and extract from captions
-      return await getTranscriptAlternative(videoId);
+    // Method 1: Try youtube-transcript library (most reliable)
+    try {
+      const transcriptParts = await YoutubeTranscript.fetchTranscript(videoUrl);
+      if (transcriptParts && transcriptParts.length > 0) {
+        transcript = transcriptParts.map((part) => part.text).join(" ");
+        extractionMethod = "youtube-transcript";
+      }
+    } catch (error) {
+      console.log("youtube-transcript failed:", error.message);
     }
 
-    const xmlText = await response.text();
-    return parseTranscriptXML(xmlText);
-  } catch (error) {
-    console.error("YouTube transcript extraction error:", error);
-    throw new Error(`Failed to extract YouTube transcript: ${error.message}`);
-  }
-}
-
-function extractVideoId(url) {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-    /^([a-zA-Z0-9_-]{11})$/,
-  ];
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern);
-    if (match) return match[1];
-  }
-  return null;
-}
-
-async function getTranscriptAlternative(videoId) {
-  try {
-    // Try to get transcript from video info
-    const infoUrl = `https://www.youtube.com/watch?v=${videoId}`;
-    const response = await fetch(infoUrl);
-    const html = await response.text();
-
-    // Look for caption track URLs in the page
-    const captionRegex = /"captionTracks":\[([^\]]+)\]/;
-    const match = html.match(captionRegex);
-
-    if (match) {
-      const captionData = JSON.parse(`[${match[1]}]`);
-      const englishCaption = captionData.find(
-        (cap) => cap.languageCode === "en" || cap.languageCode === "en-US",
-      );
-
-      if (englishCaption && englishCaption.baseUrl) {
-        const transcriptResponse = await fetch(englishCaption.baseUrl);
-        const transcriptXml = await transcriptResponse.text();
-        return parseTranscriptXML(transcriptXml);
+    // Method 2: Try with different language codes if first method fails
+    if (!transcript || transcript.length < 50) {
+      try {
+        const transcriptParts = await YoutubeTranscript.fetchTranscript(
+          videoUrl,
+          {
+            lang: "en",
+            country: "US",
+          },
+        );
+        if (transcriptParts && transcriptParts.length > 0) {
+          transcript = transcriptParts.map((part) => part.text).join(" ");
+          extractionMethod = "youtube-transcript-en-US";
+        }
+      } catch (error) {
+        console.log("youtube-transcript with en-US failed:", error.message);
       }
     }
 
-    throw new Error("No English transcript available");
+    // Method 3: Try manual extraction from YouTube's API
+    if (!transcript || transcript.length < 50) {
+      try {
+        transcript = await extractTranscriptManual(videoId);
+        if (transcript && transcript.length > 50) {
+          extractionMethod = "manual-extraction";
+        }
+      } catch (error) {
+        console.log("Manual extraction failed:", error.message);
+      }
+    }
+
+    // Final validation
+    if (!transcript || transcript.length < 50) {
+      throw new Error(
+        "No transcript available for this video. The video may not have captions enabled, may be private, or may not support transcript extraction.",
+      );
+    }
+
+    console.log(
+      `Successfully extracted transcript using: ${extractionMethod}, length: ${transcript.length}`,
+    );
+    return transcript;
   } catch (error) {
-    throw new Error("Could not extract transcript from video");
+    throw new Error(`Failed to extract transcript: ${error.message}`);
   }
+}
+
+async function extractTranscriptManual(videoId) {
+  // Try different transcript URLs that YouTube uses
+  const transcriptUrls = [
+    `https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`,
+    `https://www.youtube.com/api/timedtext?lang=en-US&v=${videoId}`,
+    `https://www.youtube.com/api/timedtext?lang=en-GB&v=${videoId}`,
+    `https://www.youtube.com/api/timedtext?v=${videoId}`, // Auto-detect language
+  ];
+
+  for (const url of transcriptUrls) {
+    try {
+      const response = await fetch(url, {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+          Accept:
+            "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
+          "Accept-Language": "en-US,en;q=0.5",
+        },
+      });
+
+      if (response.ok) {
+        const xmlText = await response.text();
+        if (xmlText && xmlText.length > 100) {
+          const transcript = parseTranscriptXML(xmlText);
+          if (transcript && transcript.length > 50) {
+            return transcript;
+          }
+        }
+      }
+    } catch (error) {
+      console.log(`Failed to fetch from ${url}:`, error.message);
+      continue;
+    }
+  }
+
+  throw new Error("Manual extraction failed for all attempted URLs");
 }
 
 function parseTranscriptXML(xmlText) {
   try {
-    // Simple XML parsing for transcript
+    // Parse XML transcript from YouTube's timedtext API
     const textRegex = /<text[^>]*>([^<]*)<\/text>/g;
     let match;
     let transcript = "";
@@ -84,8 +122,13 @@ function parseTranscriptXML(xmlText) {
         .replace(/&lt;/g, "<")
         .replace(/&gt;/g, ">")
         .replace(/&quot;/g, '"')
-        .replace(/&#39;/g, "'");
-      transcript += text + " ";
+        .replace(/&#39;/g, "'")
+        .replace(/\n/g, " ")
+        .trim();
+
+      if (text.length > 0) {
+        transcript += text + " ";
+      }
     }
 
     return transcript.trim();
@@ -94,159 +137,54 @@ function parseTranscriptXML(xmlText) {
   }
 }
 
-// PDF text extraction using built-in browser APIs
-export async function extractPDFText(arrayBuffer) {
+function extractVideoId(url) {
+  // Support various YouTube URL formats including shorts, embeds, etc.
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/|youtube\.com\/shorts\/|youtube\.com\/live\/)([a-zA-Z0-9_-]{11})/,
+    /^([a-zA-Z0-9_-]{11})$/, // Direct video ID
+  ];
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match) return match[1];
+  }
+
+  return null;
+}
+
+export async function extractPDFText(file) {
   try {
-    // For Edge Runtime, we'll use a simpler approach
-    // Convert PDF to text using a service or basic extraction
-    return await extractPDFTextSimple(arrayBuffer);
+    // Try using pdf-parse library first
+    const pdf = await import("pdf-parse").then(
+      (module) => module.default || module,
+    );
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    const pdfData = await pdf(buffer);
+    let text = pdfData.text;
+
+    if (text && text.length > 50) {
+      // Clean up the extracted text
+      text = text.replace(/\s+/g, " ").trim();
+      return text;
+    }
+
+    throw new Error("No readable text found in PDF");
   } catch (error) {
-    console.error("PDF extraction error:", error);
     throw new Error(`Failed to extract PDF text: ${error.message}`);
   }
 }
 
-async function extractPDFTextSimple(arrayBuffer) {
-  // Simple PDF text extraction
-  // For production, consider using a PDF processing service
-  const uint8Array = new Uint8Array(arrayBuffer);
-  let text = "";
-
-  // Look for text objects in PDF (very basic approach)
-  const decoder = new TextDecoder("latin1");
-  const pdfString = decoder.decode(uint8Array);
-
-  // Extract text between BT and ET markers (Begin Text / End Text)
-  const textRegex = /BT\s*(.*?)\s*ET/gs;
-  let match;
-
-  while ((match = textRegex.exec(pdfString)) !== null) {
-    const textBlock = match[1];
-    // Extract text from Tj operations
-    const tjRegex = /\((.*?)\)\s*Tj/g;
-    let tjMatch;
-
-    while ((tjMatch = tjRegex.exec(textBlock)) !== null) {
-      text += tjMatch[1] + " ";
-    }
-  }
-
-  // If basic extraction fails, try alternative method
-  if (text.trim().length < 50) {
-    text = extractTextAlternative(pdfString);
-  }
-
-  return text.trim() || "Could not extract readable text from PDF";
-}
-
-function extractTextAlternative(pdfString) {
-  // Alternative text extraction method
-  const lines = pdfString.split("\n");
-  let text = "";
-
-  for (const line of lines) {
-    // Look for readable text patterns
-    if (line.includes("(") && line.includes(")")) {
-      const textMatches = line.match(/\(([^)]+)\)/g);
-      if (textMatches) {
-        textMatches.forEach((match) => {
-          const content = match.slice(1, -1);
-          if (content.length > 2 && /[a-zA-Z]/.test(content)) {
-            text += content + " ";
-          }
-        });
-      }
-    }
-  }
-
-  return text;
-}
-
-// Document text extraction for various formats
-export async function extractDocumentText(arrayBuffer, fileName) {
-  const extension = fileName.toLowerCase().split(".").pop();
-
-  try {
-    switch (extension) {
-      case "txt":
-        return new TextDecoder().decode(arrayBuffer);
-
-      case "json":
-        const jsonText = new TextDecoder().decode(arrayBuffer);
-        const jsonData = JSON.parse(jsonText);
-        return JSON.stringify(jsonData, null, 2);
-
-      case "csv":
-        return new TextDecoder().decode(arrayBuffer);
-
-      case "md":
-        return new TextDecoder().decode(arrayBuffer);
-
-      case "html":
-      case "htm":
-        const htmlText = new TextDecoder().decode(arrayBuffer);
-        return extractTextFromHTML(htmlText);
-
-      default:
-        // Try to decode as text for unknown formats
-        try {
-          return new TextDecoder().decode(arrayBuffer);
-        } catch {
-          throw new Error(`Unsupported file format: ${extension}`);
-        }
-    }
-  } catch (error) {
-    console.error("Document extraction error:", error);
-    throw new Error(
-      `Failed to extract text from ${extension} file: ${error.message}`,
-    );
-  }
-}
-
-function extractTextFromHTML(html) {
-  // Simple HTML text extraction
-  return html
-    .replace(/<script[^>]*>.*?<\/script>/gis, "")
-    .replace(/<style[^>]*>.*?<\/style>/gis, "")
-    .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-// Utility to validate file size and type
 export function validateFile(file, maxSizeMB = 10) {
-  const maxSize = maxSizeMB * 1024 * 1024; // Convert to bytes
+  const maxSize = maxSizeMB * 1024 * 1024;
 
   if (file.size > maxSize) {
     throw new Error(`File size exceeds ${maxSizeMB}MB limit`);
   }
 
-  const allowedTypes = [
-    "application/pdf",
-    "text/plain",
-    "application/json",
-    "text/csv",
-    "text/markdown",
-    "text/html",
-    "application/msword",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  ];
-
-  const fileExtension = file.name.toLowerCase().split(".").pop();
-  const allowedExtensions = [
-    "pdf",
-    "txt",
-    "json",
-    "csv",
-    "md",
-    "html",
-    "htm",
-    "doc",
-    "docx",
-  ];
-
-  if (!allowedExtensions.includes(fileExtension)) {
-    throw new Error(`File type not supported: ${fileExtension}`);
+  if (!file.name.toLowerCase().endsWith(".pdf")) {
+    throw new Error("Only PDF files are supported");
   }
 
   return true;

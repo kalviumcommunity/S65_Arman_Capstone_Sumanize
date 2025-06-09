@@ -1,215 +1,120 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { extractPDFText, validateFile } from "../../utils/content-extractor.js";
 
-export const runtime = "edge";
-
-const CONFIG = {
-  MODEL_NAME: "gemini-2.0-flash-exp",
-  MAX_TOKENS: 8192,
-  TEMPERATURE: 0.3,
-  TOP_P: 0.8,
-  TOP_K: 40,
-};
-
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-const SYSTEM_INSTRUCTION_TEXT = `You are Sumanize, a specialized AI assistant designed to help users understand large amounts of text efficiently. Your primary role is to distill extensive content into clear, digestible summaries.
-
-When provided with PDF document content, your task is to:
-1. Identify the most crucial pieces of information from the document.
-2. Present these as distinct bullet points.
-3. For each bullet point, provide a brief and direct explanation or elaboration.
-4. Maintain the document's logical structure and flow.
-5. Highlight key sections, main arguments, and important conclusions.
-
-The overall goal is to be concise yet comprehensive in your summaries. Focus on conveying the core meaning and essential takeaways efficiently from document content. Strive for clarity and ensure your summaries are easy to understand.
-
-Please maintain a semi-formal, respectful, and friendly tone in all your communications.`;
-
-function createErrorResponse(message, status = 500, details = null) {
-  const errorObj = { error: message };
-  if (details) errorObj.details = details;
-
-  return new Response(JSON.stringify(errorObj), {
-    status,
-    headers: { "Content-Type": "application/json" },
-  });
-}
-
-const rateLimitMap = new Map();
-function checkRateLimit(identifier) {
-  const now = Date.now();
-  const windowMs = 60000;
-  const maxRequests = 8; // Reasonable limit for file processing
-
-  const requests = rateLimitMap.get(identifier) || [];
-  const validRequests = requests.filter((time) => now - time < windowMs);
-
-  if (validRequests.length >= maxRequests) {
-    return false;
-  }
-
-  validRequests.push(now);
-  rateLimitMap.set(identifier, validRequests);
-  return true;
-}
 
 export async function POST(req) {
   try {
-    const clientId = req.headers.get("x-forwarded-for") || "anonymous";
-    if (!checkRateLimit(clientId)) {
-      return createErrorResponse(
-        "Rate limit exceeded. Please try again later.",
-        429,
+    // Check if API key is configured
+    if (!process.env.GEMINI_API_KEY) {
+      return Response.json(
+        { error: "API key not configured" },
+        { status: 500 },
       );
     }
 
-    if (!process.env.GEMINI_API_KEY) {
-      console.error("GEMINI_API_KEY environment variable not set");
-      return createErrorResponse("API key not configured.", 500);
-    }
-
-    const formData = await req.formData().catch(() => null);
-    if (!formData) {
-      return createErrorResponse("Invalid form data.", 400);
-    }
-
+    // Parse form data
+    const formData = await req.formData();
     const file = formData.get("file");
-    const includeExtractedText =
-      formData.get("includeExtractedText") === "true";
-
-    if (!file) {
-      return createErrorResponse("No file provided.", 400);
-    }
 
     // Validate file
+    if (!file) {
+      return Response.json({ error: "No file provided" }, { status: 400 });
+    }
+
     try {
       validateFile(file, 15); // 15MB limit for PDFs
     } catch (error) {
-      return createErrorResponse("File validation failed", 400, error.message);
-    }
-
-    // Check if it's actually a PDF
-    if (!file.name.toLowerCase().endsWith(".pdf")) {
-      return createErrorResponse("Only PDF files are supported.", 400);
+      return Response.json(
+        {
+          error: "File validation failed",
+          details: error.message,
+        },
+        { status: 400 },
+      );
     }
 
     // Extract text from PDF
     let extractedText;
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      extractedText = await extractPDFText(arrayBuffer);
+      extractedText = await extractPDFText(file);
     } catch (error) {
-      return createErrorResponse(
-        "Failed to extract text from PDF",
-        400,
-        error.message,
+      return Response.json(
+        {
+          error: "Failed to extract text from PDF",
+          details: error.message,
+        },
+        { status: 400 },
       );
     }
 
-    if (!extractedText || extractedText.length < 50) {
-      return createErrorResponse(
-        "No readable text found in PDF",
-        400,
-        "The PDF may be image-based, encrypted, or corrupted. Please try a text-based PDF.",
+    // Check if extracted text is sufficient
+    if (!extractedText || extractedText.length < 100) {
+      return Response.json(
+        {
+          error: "No sufficient text content found",
+          details:
+            "The PDF may be image-based, encrypted, or contain no readable text",
+        },
+        { status: 400 },
       );
     }
 
-    // Truncate text if too long
-    const maxTextLength = 45000;
-    if (extractedText.length > maxTextLength) {
-      extractedText =
-        extractedText.substring(0, maxTextLength) + "... [truncated]";
+    // Truncate if too long (keep under token limits)
+    if (extractedText.length > 40000) {
+      extractedText = extractedText.substring(0, 40000) + "... [truncated]";
     }
 
+    // Configure Gemini model
     const model = genAI.getGenerativeModel({
-      model: CONFIG.MODEL_NAME,
-      systemInstruction: {
-        parts: [{ text: SYSTEM_INSTRUCTION_TEXT }],
-      },
-      generationConfig: {
-        maxOutputTokens: CONFIG.MAX_TOKENS,
-        temperature: CONFIG.TEMPERATURE,
-        topP: CONFIG.TOP_P,
-        topK: CONFIG.TOP_K,
-      },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE",
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE",
-        },
-      ],
+      model: "gemini-1.5-flash-latest",
+      systemInstruction: `You are Sumanize, an AI that creates concise, clear summaries of PDF documents.
+
+When summarizing:
+- Extract the main topics and key points
+- Use bullet points for clarity
+- Highlight important findings and conclusions
+- Maintain document structure and flow
+- Keep it comprehensive but digestible
+- Maintain a friendly, professional tone`,
     });
 
-    const prompt = `Please provide a comprehensive summary of this PDF document content:
+    // Generate summary
+    const prompt = `Please provide a comprehensive summary of this PDF document:
 
 ${extractedText}
 
-Focus on:
-- Main topics and sections
-- Key arguments and findings
-- Important data, statistics, or evidence
-- Conclusions and recommendations
-- Document structure and organization`;
+Focus on the main topics, key arguments, important data, and conclusions.`;
 
-    const generationArgs = {
-      contents: [{ role: "user", parts: [{ text: prompt }] }],
-    };
-
-    const result = await model.generateContent(generationArgs);
+    const result = await model.generateContent(prompt);
     const summary = result.response.text();
 
-    const responseData = {
+    // Return response
+    return Response.json({
       summary,
       fileName: file.name,
       fileSize: file.size,
-      processedAt: new Date().toISOString(),
       extractedTextLength: extractedText.length,
-    };
-
-    if (includeExtractedText) {
-      responseData.extractedText = extractedText;
-    }
-
-    return new Response(JSON.stringify(responseData), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": "POST",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
+      processedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("PDF API Error:", error);
 
-    let errorMessage = "Internal Server Error";
-    let statusCode = 500;
-
+    // Handle specific error types
     if (error.message?.includes("API key not valid")) {
-      errorMessage = "Invalid API Key. Please check your configuration.";
-      statusCode = 401;
-    } else if (
-      error.status === 404 ||
-      error.message?.includes("Could not find model")
-    ) {
-      errorMessage = `Model '${CONFIG.MODEL_NAME}' not found. Ensure it's available for your API key.`;
-      statusCode = 404;
-    } else if (error.status === 429) {
-      errorMessage = "API rate limit exceeded. Please try again later.";
-      statusCode = 429;
-    } else if (error.message?.includes("quota")) {
-      errorMessage = "API quota exceeded. Please check your billing settings.";
-      statusCode = 429;
-    } else if (error.message) {
-      errorMessage = error.message;
-      statusCode = error.status || 500;
+      return Response.json({ error: "Invalid API Key" }, { status: 401 });
     }
 
-    return createErrorResponse(errorMessage, statusCode);
+    if (error.status === 429) {
+      return Response.json({ error: "Rate limit exceeded" }, { status: 429 });
+    }
+
+    return Response.json(
+      {
+        error: "Internal server error",
+        details: error.message,
+      },
+      { status: 500 },
+    );
   }
 }

@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 export const runtime = "edge";
 
 const CONFIG = {
-  MODEL_NAME: "gemini-2.0-flash-exp",
+  MODEL_NAME: "gemini-1.5-flash-latest",
   MAX_TOKENS: 8192,
   TEMPERATURE: 0.3,
   TOP_P: 0.8,

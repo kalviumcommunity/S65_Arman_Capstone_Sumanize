@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 export const metadata = {
   title: "Sumanize - Fast Summarization",
   icons: {
-    icon: "/images/converted.png",
-    shortcut: "/images/converted.png",
+    icon: "/favicon.png",
+    shortcut: "/favicon.png",
   },
   description:
     "Sumanize is an AI-powered summarization tool that allows you to summarize your data.",
