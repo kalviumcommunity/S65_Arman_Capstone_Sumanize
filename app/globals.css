@@ -125,7 +125,6 @@ body {
   font-family: var(--font-funnel-sans), sans-serif;
 }
 
-code,
-pre {
+code, pre {
   font-family: var(--font-geist-mono), monospace;
 }

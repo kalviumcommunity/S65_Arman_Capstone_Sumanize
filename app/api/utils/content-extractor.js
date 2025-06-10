@@ -1,9 +1,5 @@
-// app/api/utils/content-extractor.js
-
 import { YoutubeTranscript } from "youtube-transcript";
-import pdf from "pdf-parse"; // Using static import for Node.js environment
-
-// --- YouTube Transcript Extraction ---
+import pdf from "pdf-parse";
 
 export async function extractYouTubeTranscript(videoUrl) {
   try {
@@ -15,7 +11,6 @@ export async function extractYouTubeTranscript(videoUrl) {
     let transcript = null;
     let extractionMethod = "";
 
-    // Method 1: Try the standard library call
     try {
       const transcriptParts = await YoutubeTranscript.fetchTranscript(videoUrl);
       if (transcriptParts && transcriptParts.length > 0) {
@@ -26,7 +21,6 @@ export async function extractYouTubeTranscript(videoUrl) {
       console.log("youtube-transcript failed:", error.message);
     }
 
-    // Method 2: Fallback to English (US) if first method fails
     if (!transcript || transcript.length < 50) {
       try {
         const transcriptParts = await YoutubeTranscript.fetchTranscript(
@@ -45,7 +39,6 @@ export async function extractYouTubeTranscript(videoUrl) {
       }
     }
 
-    // Method 3: Fallback to manual extraction if library fails
     if (!transcript || transcript.length < 50) {
       try {
         transcript = await extractTranscriptManual(videoId);
@@ -150,8 +143,6 @@ function extractVideoId(url) {
 
   return null;
 }
-
-// --- Document & PDF Extraction ---
 
 /**
  * Extracts text from a PDF file using the pdf-parse library.
