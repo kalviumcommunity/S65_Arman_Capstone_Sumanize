@@ -21,6 +21,20 @@ export function useChats() {
     };
   }, [status]);
 
+  // Listen for storage events to refresh chat list when titles are updated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      const handleStorageChange = () => {
+        loadChatsFromLocalStorage();
+      };
+
+      window.addEventListener("storage", handleStorageChange);
+      return () => {
+        window.removeEventListener("storage", handleStorageChange);
+      };
+    }
+  }, [status]);
+
   const loadChatsFromDatabase = async (signal) => {
     try {
       const response = await fetch("/api/chats", { signal });
@@ -43,7 +57,7 @@ export function useChats() {
           dbChats.some((c) => c.id === prevId) ? prevId : dbChats[0].id,
         );
       } else {
-        createNewChat();
+        setCurrentChatId(null);
       }
     } catch (error) {
       if (error.name !== "AbortError") {
@@ -64,11 +78,12 @@ export function useChats() {
       if (chatArray.length > 0) {
         setCurrentChatId(chatArray[0].id);
       } else {
-        createNewChat();
+        setCurrentChatId(null);
       }
     } catch (error) {
       console.error("Error loading chats from localStorage:", error);
-      createNewChat();
+      setChats([]);
+      setCurrentChatId(null);
     }
   };
 
@@ -127,14 +142,14 @@ export function useChats() {
         });
 
         if (response.ok) {
-          setChats((prev) => prev.filter((chat) => chat.id !== chatId));
+          const updatedChats = chats.filter((chat) => chat.id !== chatId);
+          setChats(updatedChats);
 
           if (currentChatId === chatId) {
-            const remainingChats = chats.filter((chat) => chat.id !== chatId);
-            if (remainingChats.length > 0) {
-              setCurrentChatId(remainingChats[0].id);
+            if (updatedChats.length > 0) {
+              setCurrentChatId(updatedChats[0].id);
             } else {
-              createNewChat();
+              setCurrentChatId(null);
             }
           }
         }
@@ -149,7 +164,7 @@ export function useChats() {
         if (updatedChats.length > 0) {
           setCurrentChatId(updatedChats[0].id);
         } else {
-          createNewChat();
+          setCurrentChatId(null);
         }
       }
 
@@ -173,6 +188,22 @@ export function useChats() {
     }
   };
 
+  // Function to refresh chats from database (for title updates)
+  const refreshChats = async () => {
+    if (session) {
+      try {
+        const response = await fetch("/api/chats");
+        if (response.ok) {
+          const data = await response.json();
+          const dbChats = data.chats || [];
+          setChats(dbChats);
+        }
+      } catch (error) {
+        console.error("Error refreshing chats:", error);
+      }
+    }
+  };
+
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
   return {
@@ -183,5 +214,6 @@ export function useChats() {
     createNewChat,
     deleteChat,
     updateChatWithMessages,
+    refreshChats,
   };
 }

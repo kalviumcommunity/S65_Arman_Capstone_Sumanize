@@ -1,5 +1,11 @@
-import { Button } from "@/components/ui/button";
-import { XIcon } from "lucide-react";
+"use client";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { ChatCircle, Trash } from "@phosphor-icons/react";
 
 export default function ChatList({
   chats,
@@ -7,40 +13,61 @@ export default function ChatList({
   onChatSelect,
   onChatDelete,
 }) {
+  if (chats.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-36 text-neutral-500">
+        <ChatCircle weight="fill" className="w-8 h-8 mb-2 opacity-50" />
+        <p className="text-sm">No chats yet</p>
+        <p className="text-sm opacity-75">Start a new conversation?</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex-1 overflow-y-auto p-2">
+    <div className="space-y-2">
       {chats.map((chat) => (
-        <div
-          key={chat.id}
-          onClick={() => onChatSelect(chat.id)}
-          className={`p-3 rounded-lg cursor-pointer mb-2 group ${
-            currentChatId === chat.id
-              ? "bg-neutral-800 border border-neutral-700"
-              : "hover:bg-neutral-800"
-          }`}
-        >
-          <div className="flex justify-between items-center">
-            <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-medium text-white truncate">
-                {chat.title}
-              </h3>
-              <p className="text-xs text-neutral-500 mt-1">
-                {new Date(chat.updatedAt).toLocaleDateString()}
-              </p>
-            </div>
-            <Button
-              onClick={(e) => {
-                e.stopPropagation();
-                onChatDelete(chat.id);
-              }}
-              variant="ghost"
-              size="sm"
-              className="opacity-0 group-hover:opacity-100 text-neutral-400 hover:text-red-400 p-1"
+        <ContextMenu key={chat.id}>
+          <ContextMenuTrigger>
+            <div
+              onClick={() => onChatSelect(chat.id)}
+              className={`
+                relative flex items-center justify-between
+                px-2 py-2 rounded-md cursor-pointer transition-all duration-200
+                ${
+                  currentChatId === chat.id
+                    ? "bg-neutral-800"
+                    : "hover:bg-neutral-800/50"
+                }
+              `}
             >
-              <XIcon className="w-4 h-4" />
-            </Button>
-          </div>
-        </div>
+              {/* Chat Icon and Title */}
+              <div className="flex items-center flex-1 min-w-0">
+                <div className="flex-1 min-w-0 relative">
+                  <h3
+                    className={`
+                      text-sm transition-colors whitespace-nowrap overflow-hidden
+                      ${currentChatId === chat.id ? "text-neutral-100" : "text-neutral-200"}
+                    `}
+                    title={chat.title}
+                  >
+                    {chat.title}
+                  </h3>
+                  {/* Fallback gradient for browsers that don't support mask */}
+                  <div className="absolute inset-y-0 right-0 w-8 pointer-events-none" />
+                </div>
+              </div>
+            </div>
+          </ContextMenuTrigger>
+          <ContextMenuContent className="w-48">
+            <ContextMenuItem
+              onClick={() => onChatDelete(chat.id)}
+              className="text-red-400 focus:text-red-400 focus:bg-red-500/10 cursor-pointer"
+            >
+              <Trash className="w-4 h-4 mr-2" />
+              Delete chat
+            </ContextMenuItem>
+          </ContextMenuContent>
+        </ContextMenu>
       ))}
     </div>
   );

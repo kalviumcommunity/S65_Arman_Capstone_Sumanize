@@ -1,4 +1,3 @@
-import ChatHeader from "./chat-header";
 import MessageList from "./message-list";
 import ChatInput from "./chat-input";
 
@@ -11,13 +10,12 @@ export default function ChatArea({
   onSendMessage,
   onSignIn,
 }) {
-  return (
-    <div className="flex-1 flex flex-col">
-      {/* Chat Header */}
-      <ChatHeader currentChat={currentChat} />
+  if (!currentChat) return null;
 
+  return (
+    <div className="flex flex-1 flex-col h-full bg-neutral-950">
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex-1 overflow-y-auto p-20">
         <MessageList
           messages={messages}
           loading={loading}

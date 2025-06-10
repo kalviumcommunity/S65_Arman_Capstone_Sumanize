@@ -1,28 +1,61 @@
+import React from "react";
+import { Progress } from "@/components/ui/progress";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+
 export default function MessageCountDisplay({
   messageCount,
   limit,
   isLimitReached,
-  isAuthenticated,
+  isAuthenticated, // This prop isn't used, but keeping it in case you need it later
 }) {
+  // Calculate progress percentage
+  const progressValue = limit === Infinity ? 0 : (messageCount / limit) * 100;
+
+  // Calculate remaining messages
+  const remainingMessages =
+    limit === Infinity ? Infinity : limit - messageCount;
+
+  // Determine tooltip text
+  const getTooltipText = () => {
+    if (limit === Infinity) {
+      return "Unlimited messages";
+    }
+
+    if (remainingMessages <= 0) {
+      return "No messages remaining";
+    }
+
+    return `${remainingMessages} message${
+      remainingMessages === 1 ? "" : "s"
+    } remaining`;
+  };
+
   return (
-    <div className="p-4 border-b border-neutral-800">
-      <div className="text-center">
-        <div className="text-sm text-neutral-400">
-          {isAuthenticated ? "Authenticated User" : "Guest User"}
-        </div>
-        <div
-          className={`text-lg font-medium ${isLimitReached ? "text-red-400" : "text-white"}`}
-        >
-          {messageCount} / {limit === Infinity ? "∞" : limit} messages
-        </div>
-        {isLimitReached && (
-          <div className="text-xs text-red-400 mt-1">
-            {isAuthenticated
-              ? "Upgrade to Premium for unlimited messages"
-              : "Sign in for more messages"}
-          </div>
-        )}
-      </div>
+    <div className="py-4">
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="w-full cursor-pointer">
+              <Progress
+                value={progressValue}
+                className="rounded-full" // This applies to the outer track
+                indicatorClassName={
+                  // This now correctly applies to the inner fill-bar
+                  progressValue >= 80 || isLimitReached ? "bg-red-500" : ""
+                }
+              />
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{getTooltipText()}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     </div>
   );
 }

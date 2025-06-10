@@ -1,13 +1,15 @@
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { User } from "lucide-react";
 
 export default function UserProfile({ session, onSignIn }) {
   const isAuthenticated = !!session;
 
   if (isAuthenticated) {
     return (
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
+      <div className="flex items-center justify-between p-4">
+        <div className="flex items-center space-x-2">
           {session.user.image && (
             <img
               src={session.user.image}
@@ -35,13 +37,23 @@ export default function UserProfile({ session, onSignIn }) {
   }
 
   return (
-    <div className="text-center">
-      <p className="text-sm text-neutral-400 mb-2">
-        Sign in to save your chats and get more messages
-      </p>
+    <div className="flex items-center justify-between p-4">
+      <div className="flex items-center space-x-2">
+        <Avatar className="w-8 h-8">
+          <AvatarFallback className="bg-neutral-700">
+            <User className="w-4 h-4 text-neutral-400" />
+          </AvatarFallback>
+        </Avatar>
+        <div>
+          <p className="text-sm font-medium text-white">Guest User</p>
+          <p className="text-xs text-neutral-400">Sign in to get more chats</p>
+        </div>
+      </div>
       <Button
         onClick={onSignIn}
-        className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+        variant="ghost"
+        size="sm"
+        className="text-neutral-400 hover:text-blue-400"
       >
         Sign In
       </Button>

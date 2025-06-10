@@ -76,6 +76,40 @@ export async function POST(req) {
     user.usage.messagesToday += 1;
     await user.save();
 
+    // Check if this is the first user message in the chat and generate a title
+    const chat = await Chat.findOne({ userId: mongoUserId, chatId: chatId });
+    const isFirstMessage = chat && chat.messages.length === 1; // Only the user message we just added
+
+    if (isFirstMessage) {
+      try {
+        // Generate title based on the first message
+        const titleResponse = await fetch(
+          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/chats/generate-title`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ message: message }),
+          },
+        );
+
+        if (titleResponse.ok) {
+          const { title } = await titleResponse.json();
+          if (title && title !== "New Chat") {
+            // Update the chat title in the database
+            await Chat.updateOne(
+              { userId: mongoUserId, chatId: chatId },
+              { $set: { title: title } },
+            );
+          }
+        }
+      } catch (titleError) {
+        console.error("Error generating chat title:", titleError);
+        // Continue with the normal flow even if title generation fails
+      }
+    }
+
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash-latest",
       systemInstruction: {
