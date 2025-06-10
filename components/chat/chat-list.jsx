@@ -13,15 +13,15 @@ export default function ChatList({
   onChatSelect,
   onChatDelete,
 }) {
-  if (chats.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-36 text-neutral-500">
-        <ChatCircle weight="fill" className="w-8 h-8 mb-2 opacity-50" />
-        <p className="text-sm">No chats yet</p>
-        <p className="text-sm opacity-75">Start a new conversation?</p>
-      </div>
-    );
-  }
+  // if (chats.length === 0) {
+  //   return (
+  //     <div className="flex flex-col items-center justify-center h-36 text-neutral-500">
+  //       <ChatCircle weight="fill" className="w-8 h-8 mb-2 opacity-50" />
+  //       <p className="text-sm">No chats yet</p>
+  //       <p className="text-sm opacity-75">Start a new conversation?</p>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="space-y-2">

@@ -22,7 +22,6 @@ export async function POST(req) {
       return Response.json({ error: "Message is required" }, { status: 400 });
     }
 
-    // Limit message length for title generation
     const truncatedMessage =
       message.length > 500 ? message.substring(0, 500) + "..." : message;
 
@@ -31,17 +30,13 @@ export async function POST(req) {
       systemInstruction: {
         parts: [
           {
-            text: `You are a helpful assistant that generates short, descriptive titles for chat conversations. 
-            
-            Your task is to create a concise title that captures the main topic or intent of the user's message. 
-            
-            Rules:
-            - Keep titles under 10 words and more than 5 words
-            - Be descriptive but concise
-            - Focus on the main topic or question
-            - Don't use quotation marks or special formatting
-            - Make it suitable for a chat tab title
-            - If it's a greeting or simple question, try to infer the likely topic`,
+            text: `You are an expert at creating concise, descriptive titles for chat conversations. Your task is to generate a title from the user's message that follows these strict rules:
+
+1.  **Length:** The title must be between 5 and 10 words long. It should be concise but not too short.
+2.  **Content:** The title must be descriptive and accurately summarize the main topic of the message.
+3.  **Clarity:** A user should understand the chat's content just by reading the title.
+4.  **Formatting:** Do not use quotation marks, markdown, or any other special formatting.
+5.  **Output:** Respond with ONLY the generated title and nothing else. Do not add prefixes like "Title:".`,
           },
         ],
       },
@@ -53,45 +48,34 @@ export async function POST(req) {
       },
     });
 
-    const prompt = `Generate a short, descriptive title for a chat conversation based on this user message:
-
-"${truncatedMessage}"
-
-Respond with only the title, nothing else. Minimum 5 words.`;
+    const prompt = `Generate a title for this message: "${truncatedMessage}"`;
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
     let title = response.text().trim();
 
-    // Ensure title is not too long and clean it up
     title = title
-      .replace(/['"]/g, "") // Remove quotes
-      .replace(/^Title:\s*/i, "") // Remove "Title:" prefix if present
-      .replace(/^\d+\.\s*/, "") // Remove numbered list prefix like "1. "
-      .replace(/^[\-\*]\s*/, "") // Remove bullet point prefix
+      .replace(/['"]/g, "")
+      .replace(/^Title:\s*/i, "")
+      .replace(/^\d+\.\s*/, "")
+      .replace(/^[\-\*]\s*/, "")
       .trim();
 
-    // If title is empty or too generic, create a fallback
     if (
       !title ||
       title.toLowerCase().includes("new chat") ||
       title.length < 3
     ) {
-      // Extract key words from the message for a simple fallback
-      const words = truncatedMessage.split(" ").slice(0, 3);
+      const words = truncatedMessage.split(" ").slice(0, 5);
       title = words
         .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
         .join(" ");
     }
 
-    const finalTitle =
-      title.length > 50 ? title.substring(0, 47) + "..." : title;
-
-    return Response.json({ title: finalTitle || "New Chat" });
+    return Response.json({ title: title || "New Chat" });
   } catch (error) {
     console.error("Error generating chat title:", error);
 
-    // Return a fallback title instead of failing
     return Response.json({ title: "New Chat" });
   }
 }

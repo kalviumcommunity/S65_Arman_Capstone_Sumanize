@@ -1,18 +1,17 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Send, Crown, LogIn } from "lucide-react";
+import {
+  StarFour,
+  ArrowLineUp,
+  YoutubeLogo,
+  FolderSimple,
+} from "@phosphor-icons/react";
 
-export default function ChatInput({
-  onSendMessage,
-  loading,
-  isLimitReached,
-  isAuthenticated,
-  onSignIn,
-}) {
+export default function ChatInput({ onSendMessage, loading, isLimitReached }) {
   const [input, setInput] = useState("");
 
   const handleSend = () => {
-    if (!input.trim() || loading) return;
+    if (!input.trim() || loading || isLimitReached) return;
     onSendMessage(input.trim());
     setInput("");
   };
@@ -24,77 +23,72 @@ export default function ChatInput({
     }
   };
 
+  const handleAutoResize = (e) => {
+    const textarea = e.target;
+    textarea.style.height = "auto";
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+  };
+
+  const isDisabled = loading || isLimitReached;
+
   return (
-    <div className="border-t border-neutral-800 p-4 backdrop-blur-lg bg-black/20">
-      <div className="flex space-x-2">
-        {/* Main chat input */}
-        <div className="backdrop-blur-lg bg-black/20 border border-white/20 rounded-2xl p-4 shadow-2xl flex-1">
-          <div className="flex items-end gap-3">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder={
-                isLimitReached
-                  ? isAuthenticated
-                    ? "Message limit reached - Upgrade to Premium"
-                    : "Message limit reached - Sign in for more"
-                  : "Type your message..."
-              }
-              disabled={loading || isLimitReached}
-              rows={1}
-              className="flex-1 bg-transparent text-white placeholder-white/50 border-none outline-none resize-none text-base leading-6 py-2 disabled:opacity-50"
-              style={{
-                minHeight: "24px",
-                maxHeight: "120px",
-                height: "auto",
-              }}
-              onInput={(e) => {
-                e.target.style.height = "auto";
-                e.target.style.height =
-                  Math.min(e.target.scrollHeight, 120) + "px";
-              }}
-            />
+    <div className="mb-4 p-2 rounded-2xl bg-neutral-900/50 backdrop-blur-lg">
+      <div className="rounded-xl p-4 bg-neutral-900/50">
+        <div className="flex flex-col">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            onInput={handleAutoResize}
+            placeholder="Type your message here..."
+            disabled={isDisabled}
+            rows={1}
+            className="w-full resize-none border-none bg-transparent p-2 mb-4 text-base leading-6 text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
+            style={{
+              minHeight: "28px",
+              maxHeight: "180px",
+            }}
+          />
+          <div className="mt-2 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-700/50 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-200"
+              >
+                <StarFour weight="fill" className="h-4 w-4" />
+                Gemini 2.0 Flash
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-700/50 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-200"
+              >
+                <FolderSimple weight="fill" className="h-4 w-4" />
+                Attach
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex items-center gap-1.5 rounded-lg bg-neutral-700/50 px-3 py-1 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-200"
+              >
+                <YoutubeLogo weight="fill" className="h-4 w-4" />
+                Youtube
+              </Button>
+            </div>
+
             <Button
               onClick={handleSend}
-              disabled={loading || !input.trim() || isLimitReached}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg disabled:opacity-50"
+              disabled={isDisabled || !input.trim()}
+              size="icon"
+              className="h-9 w-9 rounded-lg bg-neutral-700/50 transition-colors hover:bg-neutral-700 hover:text-neutral-200 disabled:bg-neutral-700 disabled:opacity-60 cursor-pointer"
             >
-              <Send className="w-4 h-4" />
+              <ArrowLineUp className="h-5 w-5" />
+              <span className="sr-only">Send Message</span>
             </Button>
           </div>
         </div>
       </div>
-      {/* Limit reached notice */}
-      {isLimitReached && (
-        <div className="mt-3 backdrop-blur-lg bg-black/20 border border-white/20 rounded-xl p-3 text-center">
-          <Button
-            onClick={onSignIn}
-            className={`
-              ${
-                isAuthenticated
-                  ? "bg-amber-600 hover:bg-amber-700"
-                  : "bg-green-600 hover:bg-green-700"
-              }
-              text-white px-4 py-2 rounded-lg
-            `}
-          >
-            <div className="flex items-center gap-2">
-              {isAuthenticated ? (
-                <>
-                  <Crown className="w-4 h-4" />
-                  Upgrade to Premium
-                </>
-              ) : (
-                <>
-                  <LogIn className="w-4 h-4" />
-                  Sign In for More Messages
-                </>
-              )}
-            </div>
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

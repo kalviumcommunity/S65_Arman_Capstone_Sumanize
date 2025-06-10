@@ -76,13 +76,11 @@ export async function POST(req) {
     user.usage.messagesToday += 1;
     await user.save();
 
-    // Check if this is the first user message in the chat and generate a title
     const chat = await Chat.findOne({ userId: mongoUserId, chatId: chatId });
-    const isFirstMessage = chat && chat.messages.length === 1; // Only the user message we just added
+    const isFirstMessage = chat && chat.messages.length === 1;
 
     if (isFirstMessage) {
       try {
-        // Generate title based on the first message
         const titleResponse = await fetch(
           `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/chats/generate-title`,
           {
@@ -97,7 +95,6 @@ export async function POST(req) {
         if (titleResponse.ok) {
           const { title } = await titleResponse.json();
           if (title && title !== "New Chat") {
-            // Update the chat title in the database
             await Chat.updateOne(
               { userId: mongoUserId, chatId: chatId },
               { $set: { title: title } },
@@ -106,7 +103,6 @@ export async function POST(req) {
         }
       } catch (titleError) {
         console.error("Error generating chat title:", titleError);
-        // Continue with the normal flow even if title generation fails
       }
     }
 
@@ -115,7 +111,16 @@ export async function POST(req) {
       systemInstruction: {
         parts: [
           {
-            text: "You are a helpful AI assistant. Provide clear, concise, and useful responses.",
+            text: `You are Sumanize, a friendly and intelligent AI assistant. Format your responses clearly and simply.
+
+## Formatting Rules:
+- Use **bold** for key points and emphasis
+- Use numbered lists (1., 2., 3., 4.) for main points
+- Use bullet points with \`- \` for sub-points and lists
+- Use ### for headings when organizing longer responses
+- Keep formatting simple and readable with good spacing
+
+Provide clear, helpful, and well-formatted responses to assist users effectively.`,
           },
         ],
       },

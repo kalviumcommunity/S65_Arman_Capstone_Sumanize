@@ -10,13 +10,11 @@ export default function UserProfile({ session, onSignIn }) {
     return (
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center space-x-2">
-          {session.user.image && (
-            <img
-              src={session.user.image}
-              alt={session.user.name}
-              className="w-8 h-8 rounded-full"
-            />
-          )}
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-neutral-700 text-white">
+              {session.user.name?.charAt(0).toUpperCase() || "U"}
+            </AvatarFallback>
+          </Avatar>
           <div>
             <p className="text-sm font-medium text-white">
               {session.user.name}
@@ -39,9 +37,9 @@ export default function UserProfile({ session, onSignIn }) {
   return (
     <div className="flex items-center justify-between p-4">
       <div className="flex items-center space-x-2">
-        <Avatar className="w-8 h-8">
+        <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-neutral-700">
-            <User className="w-4 h-4 text-neutral-400" />
+            <User className="h-4 w-4 text-neutral-400" />
           </AvatarFallback>
         </Avatar>
         <div>

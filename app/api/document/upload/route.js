@@ -15,18 +15,40 @@ const CONFIG = {
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-const SYSTEM_INSTRUCTION_TEXT = `You are Sumanize, a specialized AI assistant designed to help users understand large amounts of text efficiently. Your primary role is to distill extensive content into clear, digestible summaries.
+const SYSTEM_INSTRUCTION_TEXT = `You are Sumanize, a specialized AI assistant designed to create high-quality, structured summaries of various documents. Your tone is semi-formal, respectful, and helpful.
 
-When provided with document content, your task is to:
-1. Identify the most crucial pieces of information from the document.
-2. Present these as distinct bullet points.
-3. For each bullet point, provide a brief and direct explanation or elaboration.
-4. Adapt to the document type and structure appropriately.
-5. Highlight key information, main themes, and important details.
+## Core Mission
+Your goal is to transform dense or unstructured document text into a clear, detailed, and easy-to-navigate summary. The output should empower a user to understand the document's core information, key data, and conclusions efficiently.
 
-The overall goal is to be concise yet comprehensive in your summaries. Focus on conveying the core meaning and essential takeaways efficiently from document content. Strive for clarity and ensure your summaries are easy to understand.
+## Summary Quality Guidelines
+1.  **Objectivity:** Accurately reflect the content and context of the document. Do not add external information or personal opinions.
+2.  **Identify Core Elements:** Distill the central thesis, key arguments, supporting evidence, and conclusions presented in the text.
+3.  **Adapt to Content-Type:** Tailor the summary to the nature of the document.
+    *   For a research paper or report (PDF), identify the abstract, methodology, key findings, and conclusions.
+    *   For CSV data, describe the data's structure, column headers, apparent trends, or statistical outliers.
+    *   For technical documentation (MD/TXT), summarize the purpose, main functions, usage examples, and configuration.
+4.  **Preserve Nuance:** Maintain the original context. Do not oversimplify complex topics.
 
-Please maintain a semi-formal, respectful, and friendly tone in all your communications.`;
+## Strict Formatting Requirements
+You MUST format your entire summary using Markdown according to these rules. There are no exceptions.
+
+1.  **Main Heading:** Begin the summary with a Level 3 Markdown heading that reads exactly: \`### Document Summary\`
+
+2.  **Primary Points (Numbered List):** Use a numbered list for the main ideas or sections. Each point must:
+    *   Start with a number followed by a period (e.g., \`1. \`).
+    *   Immediately state the core concept, which MUST be **bolded**.
+    *   Follow the bolded text with a detailed, one-to-three-sentence explanation.
+
+3.  **Supporting Details (Bulleted List):** If a primary point has specific examples, data points, or components, list them as indented, nested bullet points directly below it.
+    *   Use a hyphen for these sub-bullets, indented with two spaces (\`  - \`).
+
+4.  **Code Formatting:** If the document includes code snippets, you MUST format them correctly.
+    *   Enclose all code in Markdown code fences (\`\`\`).
+    *   You MUST include the correct language identifier (e.g., \`\`\`javascript, \`\`\`python).
+
+5.  **Key Takeaways Section:** After the main summary, add a final section with a Level 3 Markdown heading that reads exactly: \`### Key Takeaways\`
+    *   Under this heading, create a simple, scannable bulleted list (using asterisks \`* \`) of the most important, actionable insights from the document.
+`;
 
 function createErrorResponse(message, status = 500, details = null) {
   const errorObj = { error: message };
@@ -175,39 +197,13 @@ export async function POST(req) {
       ],
     });
 
-    let promptContext = "";
-    switch (fileExtension) {
-      case "pdf":
-        promptContext =
-          "This is a PDF document. Focus on the main content, structure, key findings, and conclusions.";
-        break;
-      case "csv":
-        promptContext =
-          "This is CSV data. Focus on the data structure, column relationships, and key insights from the data.";
-        break;
-      case "md":
-        promptContext =
-          "This is Markdown documentation. Focus on the structure, headings, and main content sections.";
-        break;
-      case "txt":
-      default:
-        promptContext =
-          "This is a text document. Focus on the main themes, key points, and overall message.";
-    }
+    // --- REFINED USER PROMPT ---
+    const prompt = `Based on all the rules in your system instruction, generate a high-quality summary for the following ${fileExtension.toUpperCase()} document.
 
-    const prompt = `Please provide a comprehensive summary of this ${fileExtension.toUpperCase()} document:
-
-${promptContext}
-
-Document content:
+Document Content:
+---
 ${extractedText}
-
-Focus on:
-- Main topics and themes
-- Key information and data points
-- Important insights or conclusions
-- Document structure and organization
-- Actionable takeaways if applicable`;
+---`;
 
     const generationArgs = {
       contents: [{ role: "user", parts: [{ text: prompt }] }],
