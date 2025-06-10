@@ -6,4 +6,4 @@ export default function ChatHeader({ currentChat }) {
       </h2>
     </div>
   );
-} 
+}

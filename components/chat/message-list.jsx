@@ -54,4 +54,4 @@ export default function MessageList({ messages, loading, isAuthenticated }) {
       )}
     </div>
   );
-} 
+}

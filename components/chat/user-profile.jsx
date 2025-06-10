@@ -47,4 +47,4 @@ export default function UserProfile({ session, onSignIn }) {
       </Button>
     </div>
   );
-} 
+}

@@ -1,4 +1,3 @@
-
 import { Funnel_Sans, Geist_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/providers/session-provider";
 import "@/app/globals.css";
