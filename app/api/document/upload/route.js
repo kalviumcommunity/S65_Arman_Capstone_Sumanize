@@ -1,5 +1,3 @@
-// app/api/document/upload/route.js
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import {
   extractDocumentText,

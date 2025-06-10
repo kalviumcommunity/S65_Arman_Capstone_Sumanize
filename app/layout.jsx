@@ -1,5 +1,6 @@
-import "@/app/globals.css";
 import { Funnel_Sans, Geist_Mono } from "next/font/google";
+import { AuthProvider } from "@/components/providers/session-provider";
+import "@/app/globals.css";
 
 const funnelSans = Funnel_Sans({
   variable: "--font-funnel-sans",
@@ -27,7 +28,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${funnelSans.variable} ${geistMono.variable} antialiased bg-neutral-950`}
       >
-        {children}
+        <AuthProvider>{children}</AuthProvider>
       </body>
     </html>
   );
