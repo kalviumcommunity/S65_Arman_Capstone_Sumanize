@@ -224,4 +224,4 @@ UserSchema.methods.updateLastLogin = function () {
   return this.save();
 };
 
-export default mongoose.models.User || mongoose.model("User", UserSchema); 
+export default mongoose.models.User || mongoose.model("User", UserSchema);

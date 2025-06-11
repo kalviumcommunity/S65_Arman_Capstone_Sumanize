@@ -17,7 +17,10 @@ export async function POST(request, { params }) {
   }
 
   await connectDB();
-  const chat = await Chat.findOne({ chatId: params.chatId, userId: session.user.id });
+  const chat = await Chat.findOne({
+    chatId: params.chatId,
+    userId: session.user.id,
+  });
   if (!chat) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
@@ -26,4 +29,4 @@ export async function POST(request, { params }) {
   chat.messages.push(message);
   await chat.save();
   return NextResponse.json(message);
-} 
+}
