@@ -30,46 +30,49 @@ const connectToMongoDB = async (retries = 5) => {
         serverSelectionTimeoutMS: 10000,
         socketTimeoutMS: 45000,
         maxPoolSize: 10,
-        minPoolSize: 1
+        minPoolSize: 1,
       });
       console.log("✅ Connected to MongoDB successfully");
       isDBConnected = true;
       return;
     } catch (error) {
-      console.error(`❌ MongoDB connection attempt ${i + 1} failed:`, error.message);
+      console.error(
+        `❌ MongoDB connection attempt ${i + 1} failed:`,
+        error.message,
+      );
       if (i === retries - 1) {
         console.error("FATAL: Failed to connect to MongoDB after all retries");
         process.exit(1);
       }
-      await new Promise(resolve => setTimeout(resolve, 2000 * (i + 1))); // Exponential backoff
+      await new Promise((resolve) => setTimeout(resolve, 2000 * (i + 1))); // Exponential backoff
     }
   }
 };
 
 // Monitor MongoDB connection
-mongoose.connection.on('connected', () => {
-  console.log('📡 MongoDB connected');
+mongoose.connection.on("connected", () => {
+  console.log("📡 MongoDB connected");
   isDBConnected = true;
 });
 
-mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB error:', err);
+mongoose.connection.on("error", (err) => {
+  console.error("❌ MongoDB error:", err);
   isDBConnected = false;
 });
 
-mongoose.connection.on('disconnected', () => {
-  console.log('📡 MongoDB disconnected');
+mongoose.connection.on("disconnected", () => {
+  console.log("📡 MongoDB disconnected");
   isDBConnected = false;
 });
 
 // Initialize MongoDB connection
 await connectToMongoDB();
 
-const wss = new WebSocketServer({ 
+const wss = new WebSocketServer({
   port: 3001,
   perMessageDeflate: false,
   clientTracking: true,
-  maxPayload: 16 * 1024 * 1024 // 16MB max payload
+  maxPayload: 16 * 1024 * 1024, // 16MB max payload
 });
 
 console.log("🚀 WebSocket server started on port 3001");
@@ -107,13 +110,13 @@ const safeSend = (ws, data) => {
 
 wss.on("connection", async (ws, request) => {
   let chatId, userId;
-  
+
   try {
     // Initialize connection state
     ws.isAlive = true;
     ws.lastPing = Date.now();
     ws.connectionId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Parse query parameters with validation
     const url = new URL(request.url, `http://${request.headers.host}`);
     chatId = url.searchParams.get("chatId");
@@ -121,7 +124,9 @@ wss.on("connection", async (ws, request) => {
 
     // Validate required parameters
     if (!chatId || !userId || chatId.length < 5 || userId.length < 5) {
-      console.log(`❌ WebSocket connection rejected: Invalid parameters (chatId: ${chatId}, userId: ${userId})`);
+      console.log(
+        `❌ WebSocket connection rejected: Invalid parameters (chatId: ${chatId}, userId: ${userId})`,
+      );
       cleanupConnection(ws, "Invalid parameters");
       return;
     }
@@ -133,17 +138,21 @@ wss.on("connection", async (ws, request) => {
       return;
     }
 
-    console.log(`✅ WebSocket connected: ${ws.connectionId} (user: ${userId}, chat: ${chatId})`);
+    console.log(
+      `✅ WebSocket connected: ${ws.connectionId} (user: ${userId}, chat: ${chatId})`,
+    );
 
     // Set up connection event handlers
     ws.on("pong", () => heartbeat(ws));
-    
+
     ws.on("error", (error) => {
       console.error(`❌ WebSocket error for ${ws.connectionId}:`, error);
     });
 
     ws.on("close", (code, reason) => {
-      console.log(`🔌 WebSocket disconnected: ${ws.connectionId} (code: ${code}, reason: ${reason || 'none'})`);
+      console.log(
+        `🔌 WebSocket disconnected: ${ws.connectionId} (code: ${code}, reason: ${reason || "none"})`,
+      );
     });
 
     // Message handler with comprehensive error handling
@@ -164,17 +173,25 @@ wss.on("connection", async (ws, request) => {
           safeSend(ws, { error: "Invalid message format" });
           return;
         }
-        
-        if (message.type !== "message" || !message.content || typeof message.content !== 'string') {
+
+        if (
+          message.type !== "message" ||
+          !message.content ||
+          typeof message.content !== "string"
+        ) {
           safeSend(ws, { error: "Invalid message structure" });
           return;
         }
 
         // Verify user has access to this chat with timeout
-        const chatPromise = Chat.findOne({ chatId, userId }).lean().maxTimeMS(5000);
+        const chatPromise = Chat.findOne({ chatId, userId })
+          .lean()
+          .maxTimeMS(5000);
         const chat = await Promise.race([
           chatPromise,
-          new Promise((_, reject) => setTimeout(() => reject(new Error('Database query timeout')), 6000))
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error("Database query timeout")), 6000),
+          ),
         ]);
 
         if (!chat) {
@@ -182,16 +199,19 @@ wss.on("connection", async (ws, request) => {
           return;
         }
 
-        console.log(`📨 Processing message for chat ${chatId} (${chat.messages?.length || 0} previous messages)`);
+        console.log(
+          `📨 Processing message for chat ${chatId} (${chat.messages?.length || 0} previous messages)`,
+        );
 
         // Prepare conversation history with safety checks
         const conversationHistory = [];
         if (chat.messages && Array.isArray(chat.messages)) {
-          for (const msg of chat.messages.slice(-20)) { // Limit to last 20 messages for context
-            if (msg.role && msg.content && typeof msg.content === 'string') {
+          for (const msg of chat.messages.slice(-20)) {
+            // Limit to last 20 messages for context
+            if (msg.role && msg.content && typeof msg.content === "string") {
               conversationHistory.push({
                 role: msg.role === "user" ? "user" : "model",
-                parts: [{ text: msg.content.substring(0, 8000) }] // Limit message length
+                parts: [{ text: msg.content.substring(0, 8000) }], // Limit message length
               });
             }
           }
@@ -212,13 +232,13 @@ wss.on("connection", async (ws, request) => {
             safetySettings: [
               {
                 category: "HARM_CATEGORY_HARASSMENT",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
               },
               {
                 category: "HARM_CATEGORY_HATE_SPEECH",
-                threshold: "BLOCK_MEDIUM_AND_ABOVE"
-              }
-            ]
+                threshold: "BLOCK_MEDIUM_AND_ABOVE",
+              },
+            ],
           });
         } catch (modelError) {
           console.error("Failed to create chat session:", modelError);
@@ -229,7 +249,7 @@ wss.on("connection", async (ws, request) => {
         const messageContent = message.content.substring(0, 4000); // Limit input length
         let fullResponse = "";
         let chunkCount = 0;
-        
+
         try {
           // Set up response timeout
           const responseTimeout = setTimeout(() => {
@@ -239,7 +259,7 @@ wss.on("connection", async (ws, request) => {
           }, 45000); // 45 second timeout
 
           const result = await chatSession.sendMessageStream(messageContent);
-          
+
           // Stream the response with enhanced error handling
           for await (const chunk of result.stream) {
             // Check connection health
@@ -253,14 +273,14 @@ wss.on("connection", async (ws, request) => {
             if (chunkText && chunkText.length > 0) {
               fullResponse += chunkText;
               chunkCount++;
-              
+
               // Send chunk with connection check
               const sent = safeSend(ws, {
                 type: "chunk",
                 text: chunkText,
-                chunkIndex: chunkCount
+                chunkIndex: chunkCount,
               });
-              
+
               if (!sent) {
                 clearTimeout(responseTimeout);
                 console.log("Failed to send chunk, connection likely closed");
@@ -268,7 +288,7 @@ wss.on("connection", async (ws, request) => {
               }
             }
           }
-          
+
           clearTimeout(responseTimeout);
 
           // Validate complete response
@@ -281,28 +301,30 @@ wss.on("connection", async (ws, request) => {
           safeSend(ws, {
             type: "complete",
             content: fullResponse,
-            totalChunks: chunkCount
+            totalChunks: chunkCount,
           });
-          
-          console.log(`✅ Response completed for chat ${chatId} (${chunkCount} chunks, ${fullResponse.length} chars)`);
 
+          console.log(
+            `✅ Response completed for chat ${chatId} (${chunkCount} chunks, ${fullResponse.length} chars)`,
+          );
         } catch (streamError) {
           console.error("Streaming error:", streamError);
-          safeSend(ws, { 
+          safeSend(ws, {
             error: "Failed to generate response",
-            details: streamError.message || "Unknown streaming error"
+            details: streamError.message || "Unknown streaming error",
           });
         }
-
       } catch (error) {
-        console.error(`❌ Message processing error for ${ws.connectionId}:`, error);
-        safeSend(ws, { 
+        console.error(
+          `❌ Message processing error for ${ws.connectionId}:`,
+          error,
+        );
+        safeSend(ws, {
           error: "Internal server error",
-          details: error.message || "Unknown error"
+          details: error.message || "Unknown error",
         });
       }
     });
-
   } catch (connectionError) {
     console.error("❌ Connection setup error:", connectionError);
     cleanupConnection(ws, "Setup failed");
@@ -315,18 +337,22 @@ const heartbeatInterval = setInterval(() => {
   wss.clients.forEach((ws) => {
     try {
       // Check if connection is stale (no pong for over 60 seconds)
-      if (ws.lastPing && (now - ws.lastPing) > 60000) {
-        console.log(`🔌 Terminating stale connection: ${ws.connectionId || 'unknown'}`);
+      if (ws.lastPing && now - ws.lastPing > 60000) {
+        console.log(
+          `🔌 Terminating stale connection: ${ws.connectionId || "unknown"}`,
+        );
         ws.terminate();
         return;
       }
 
       if (ws.isAlive === false) {
-        console.log(`🔌 Terminating dead connection: ${ws.connectionId || 'unknown'}`);
+        console.log(
+          `🔌 Terminating dead connection: ${ws.connectionId || "unknown"}`,
+        );
         ws.terminate();
         return;
       }
-      
+
       ws.isAlive = false;
       ws.ping((error) => {
         if (error) {
@@ -357,7 +383,7 @@ wss.on("close", () => {
 // Graceful shutdown handling
 const gracefulShutdown = async (signal) => {
   console.log(`\n🛑 Received ${signal}, initiating graceful shutdown...`);
-  
+
   // Stop accepting new connections
   wss.close((error) => {
     if (error) {
@@ -366,7 +392,7 @@ const gracefulShutdown = async (signal) => {
       console.log("✅ WebSocket server closed gracefully");
     }
   });
-  
+
   // Close all existing connections
   wss.clients.forEach((ws) => {
     try {
@@ -375,10 +401,10 @@ const gracefulShutdown = async (signal) => {
       console.error("Error closing client connection:", error);
     }
   });
-  
+
   // Clear intervals
   clearInterval(heartbeatInterval);
-  
+
   // Close MongoDB connection
   try {
     await mongoose.connection.close();
@@ -386,7 +412,7 @@ const gracefulShutdown = async (signal) => {
   } catch (error) {
     console.error("❌ Error closing MongoDB:", error);
   }
-  
+
   console.log("✅ Graceful shutdown completed");
   process.exit(0);
 };
@@ -407,4 +433,4 @@ process.on("unhandledRejection", (reason, promise) => {
   gracefulShutdown("UNHANDLED_REJECTION");
 });
 
-console.log("🎯 WebSocket server fully initialized and ready for connections"); 
+console.log("🎯 WebSocket server fully initialized and ready for connections");

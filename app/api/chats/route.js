@@ -12,7 +12,9 @@ export async function GET(request) {
   }
 
   await connectDB();
-  const chats = await Chat.find({ userId: session.user.id }).sort({ updatedAt: -1 });
+  const chats = await Chat.find({ userId: session.user.id }).sort({
+    updatedAt: -1,
+  });
   return NextResponse.json(chats);
 }
 
@@ -23,16 +25,13 @@ export async function POST(request) {
   }
 
   await connectDB();
-  
-  // Count existing chats to create a numbered title
-  const chatCount = await Chat.countDocuments({ userId: session.user.id });
-  
+
   const newChat = await Chat.create({
     userId: session.user.id,
     chatId: uuidv4(),
-    title: `Chat ${chatCount + 1}`,
+    title: "New Chat",
     messages: [],
   });
 
   return NextResponse.json(newChat);
-} 
+}
