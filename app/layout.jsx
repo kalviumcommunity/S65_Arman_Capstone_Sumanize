@@ -1,6 +1,6 @@
-import { Funnel_Sans, Geist_Mono, Instrument_Serif } from "next/font/google";
-import { AuthProvider } from "@/components/providers/session-provider";
+import { Funnel_Sans, Geist_Mono } from "next/font/google";
 import "@/app/globals.css";
+import Providers from "@/components/Providers";
 
 const funnelSans = Funnel_Sans({
   variable: "--font-funnel-sans",
@@ -10,12 +10,6 @@ const funnelSans = Funnel_Sans({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  subsets: ["latin"],
-  weight: ["400"],
 });
 
 export const metadata = {
@@ -32,9 +26,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased bg-neutral-950 text-neutral-200`}
+        className={`${funnelSans.variable} ${geistMono.variable} antialiased bg-neutral-900 text-white`}
       >
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
