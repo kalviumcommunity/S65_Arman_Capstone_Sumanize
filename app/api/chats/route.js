@@ -1,9 +1,12 @@
+// app/api/chats/route.js (Corrected)
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
-import { v4 as uuidv4 } from "uuid";
+// Change this import
+import { randomUUID } from "crypto";
 
 export async function GET(request) {
   const session = await getServerSession(authOptions);
@@ -28,7 +31,8 @@ export async function POST(request) {
 
   const newChat = await Chat.create({
     userId: session.user.id,
-    chatId: uuidv4(),
+    // Use the new function
+    chatId: randomUUID(),
     title: "New Chat",
     messages: [],
   });

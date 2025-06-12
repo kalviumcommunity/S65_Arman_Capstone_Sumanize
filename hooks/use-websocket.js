@@ -34,9 +34,6 @@ export function useWebSocket(
 
       try {
         connectionId = `${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-        console.log(
-          `🔗 Connecting WebSocket ${connectionId} for chat ${activeChatId}, user ${session.user.id}`,
-        );
 
         ws.current = new WebSocket(
           `ws://localhost:3001?chatId=${activeChatId}&userId=${session.user.id}`,
@@ -44,7 +41,7 @@ export function useWebSocket(
 
         // Connection opened successfully
         ws.current.onopen = () => {
-          console.log(`✅ WebSocket ${connectionId} connected successfully`);
+          console.log(`WebSocket ${connectionId} connected`);
           reconnectAttempts = 0;
           setIsLoading(false);
         };
@@ -55,7 +52,7 @@ export function useWebSocket(
             const data = JSON.parse(event.data);
 
             if (data.error) {
-              console.error(`❌ WebSocket error from server:`, data.error);
+              console.error(`WebSocket error from server:`, data.error);
               if (data.details) {
                 console.error(`Error details:`, data.details);
               }
@@ -119,7 +116,7 @@ export function useWebSocket(
 
               setIsLoading(false);
               console.log(
-                `✅ Response completed for ${connectionId} (${data.totalChunks || 0} chunks)`,
+                `Response completed for ${connectionId} (${data.totalChunks || 0} chunks)`,
               );
             }
           } catch (parseError) {
@@ -131,7 +128,7 @@ export function useWebSocket(
         // Connection closed handler with reconnection logic
         ws.current.onclose = (event) => {
           console.log(
-            `🔌 WebSocket ${connectionId} disconnected: code=${event.code}, reason=${event.reason || "none"}`,
+            `WebSocket ${connectionId} disconnected: code=${event.code}, reason=${event.reason || "none"}`,
           );
           setIsLoading(false);
 
@@ -146,29 +143,26 @@ export function useWebSocket(
               10000,
             ); // Exponential backoff, max 10s
             console.log(
-              `🔄 Scheduling reconnection attempt ${reconnectAttempts + 1}/${maxReconnectAttempts} in ${delay}ms`,
+              `Scheduling reconnection attempt ${reconnectAttempts + 1}/${maxReconnectAttempts} in ${delay}ms`,
             );
 
             reconnectTimeout = setTimeout(() => {
               reconnectAttempts++;
               console.log(
-                `🔄 Reconnection attempt ${reconnectAttempts}/${maxReconnectAttempts}`,
+                `Reconnection attempt ${reconnectAttempts}/${maxReconnectAttempts}`,
               );
               connectWebSocket();
             }, delay);
           } else if (reconnectAttempts >= maxReconnectAttempts) {
             console.error(
-              `❌ Max reconnection attempts (${maxReconnectAttempts}) reached. Connection failed.`,
+              `Max reconnection attempts (${maxReconnectAttempts}) reached. Connection failed.`,
             );
           }
         };
 
         // Connection error handler
         ws.current.onerror = (error) => {
-          console.error(
-            `❌ WebSocket ${connectionId} connection error:`,
-            error,
-          );
+          console.error(`WebSocket ${connectionId} connection error:`, error);
           setIsLoading(false);
         };
       } catch (error) {
@@ -187,7 +181,7 @@ export function useWebSocket(
       }
 
       if (ws.current) {
-        console.log(`🔌 Cleaning up WebSocket ${connectionId}`);
+        console.log(`Cleaning up WebSocket ${connectionId}`);
         ws.current.removeAllListeners?.();
 
         if (ws.current.readyState === WebSocket.OPEN) {

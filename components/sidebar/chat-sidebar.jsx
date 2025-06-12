@@ -2,6 +2,22 @@
 
 import { useSession, signIn } from "next-auth/react";
 import { useState } from "react";
+import {
+  MagnifyingGlass,
+  SidebarSimple,
+  ArrowLineRight,
+  ArrowLineLeft,
+  GithubLogo,
+  GoogleLogo,
+} from "@phosphor-icons/react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
 import UserAccountNav from "../user-account";
 
 export function ChatSidebar({
@@ -14,9 +30,10 @@ export function ChatSidebar({
 }) {
   const { data: session } = useSession();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
-  const handleDeleteClick = (e, chatId) => {
-    e.stopPropagation(); // Prevent chat selection
+  const handleDeleteClick = (chatId) => {
     setShowDeleteConfirm(chatId);
   };
 
@@ -31,107 +48,164 @@ export function ChatSidebar({
     setShowDeleteConfirm(null);
   };
 
+  const toggleCollapse = () => {
+    setIsCollapsed(!isCollapsed);
+  };
+
+  const filteredChats = chats.filter((chat) =>
+    chat.title.toLowerCase().includes(searchQuery.toLowerCase()),
+  );
+
   return (
-    <div className="flex h-full flex-col bg-neutral-900">
-      {/* Header with New Chat button */}
-      <div className="p-4 border-b border-neutral-700">
-        <button
-          onClick={onCreateChat}
-          className="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-        >
-          + New Chat
-        </button>
-      </div>
+    <div className="relative flex text-neutral-300">
+      {/* Collapse/Expand Toggle Button - Always visible */}
+      <button
+        onClick={toggleCollapse}
+        className="absolute top-2 left-2 z-20 p-2 bg-neutral-900 cursor-pointer rounded-lg transition-colors group"
+        title={isCollapsed ? "Show sidebar" : "Hide sidebar"}
+      >
+        {/* Sidebar icon (default) */}
+        <span className="block group-hover:hidden">
+          <SidebarSimple size={20} />
+        </span>
+        {/* Arrow icon (on hover) */}
+        <span className="hidden group-hover:block">
+          {isCollapsed ? (
+            <ArrowLineRight size={20} />
+          ) : (
+            <ArrowLineLeft size={20} />
+          )}
+        </span>
+      </button>
 
-      {/* Chat List */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="p-2">
-          {chats.length === 0 ? (
-            <div className="text-center text-neutral-500 py-8">
-              <p className="text-sm">No chats yet</p>
-              <p className="text-xs mt-1">
-                Create your first chat to get started
-              </p>
+      {/* Sidebar */}
+      <div
+        className={`flex-shrink-0 bg-neutral-900/50 transition-all duration-300 ease-in-out overflow-hidden ${
+          isCollapsed ? "w-0" : "w-78"
+        }`}
+      >
+        <div className="h-full flex flex-col">
+          {/* Header with New Chat button */}
+          <div className="p-2 pt-13">
+            <Button
+              onClick={onCreateChat}
+              className="w-full bg-neutral-300 hover:bg-neutral-400 text-neutral-900 transition-all duration-300 ease-in-out cursor-pointer"
+            >
+              New Chat
+            </Button>
+          </div>
+
+          {/* Search Input */}
+          <div className="px-2 pb-2">
+            <div className="relative">
+              <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 w-4 h-4" />
+              <Input
+                type="text"
+                placeholder="Search chats..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-8 border-none focus:ring-0 text-neutral-500 placeholder:text-neutral-500 focus:o"
+              />
             </div>
-          ) : chats.length > 0 ? (
-            <div className="space-y-1">
-              {chats.map((chat) => (
-                <div key={chat.chatId} className="relative group">
-                  <button
-                    onClick={() => onSelectChat(chat.chatId)}
-                    className={`w-full text-left px-3 py-3 rounded-lg transition-colors ${
-                      chat.chatId === activeChatId
-                        ? "bg-neutral-700 text-white"
-                        : "text-neutral-300 hover:bg-neutral-800 hover:text-white"
-                    }`}
-                  >
-                    <div className="font-medium text-sm truncate pr-8 flex items-center gap-2">
-                      {chat.title}
-                      {chat.title === "New Chat" &&
-                        chat.chatId === activeChatId &&
-                        chat.messages?.length > 0 && (
-                          <div className="flex space-x-1">
-                            <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></div>
-                            <div
-                              className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.1s" }}
-                            ></div>
-                            <div
-                              className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"
-                              style={{ animationDelay: "0.2s" }}
-                            ></div>
-                          </div>
-                        )}
-                    </div>
-                    <div className="text-xs text-neutral-500 mt-1">
-                      {chat.messages?.length || 0} messages
-                    </div>
-                    {chat.updatedAt && (
-                      <div className="text-xs text-neutral-600 mt-1">
-                        {new Date(chat.updatedAt).toLocaleDateString()}
-                      </div>
-                    )}
-                  </button>
+          </div>
 
-                  {/* Delete button - only show on hover */}
+          {/* Chat List */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="p-2">
+              {filteredChats.length === 0 ? (
+                <div className="text-center text-neutral-500 p-2">
+                  {chats.length === 0 ? (
+                    <>
+                      <p className="text-sm"></p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-sm">No chats found</p>
+                      <p className="text-xs mt-1">Try adjusting your search</p>
+                    </>
+                  )}
+                </div>
+              ) : filteredChats.length > 0 ? (
+                <div className="space-y-1">
+                  {filteredChats.map((chat) => (
+                    <ContextMenu key={chat.chatId}>
+                      <ContextMenuTrigger asChild>
+                        <div className="relative group">
+                          <Button
+                            onClick={() => onSelectChat(chat.chatId)}
+                            variant="ghost"
+                            className={`w-full text-left justify-start p-2 text-neutral-100 h-auto cursor-pointer ${
+                              chat.chatId === activeChatId
+                                ? "bg-neutral-900 hover:bg-neutral-900 hover:text-neutral-100"
+                                : "text-neutral-100 hover:bg-neutral-900 hover:text-neutral-100"
+                            }`}
+                          >
+                            <div className="w-full">
+                              <div className="text-sm truncate pr-8 flex items-center gap-2">
+                                {chat.title}
+                                {chat.title === "New Chat" &&
+                                  chat.chatId === activeChatId &&
+                                  chat.messages?.length > 0 && (
+                                    <div className="flex space-x-1">
+                                      <div className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"></div>
+                                      <div
+                                        className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: "0.1s" }}
+                                      ></div>
+                                      <div
+                                        className="w-1 h-1 bg-blue-400 rounded-full animate-bounce"
+                                        style={{ animationDelay: "0.2s" }}
+                                      ></div>
+                                    </div>
+                                  )}
+                              </div>
+                            </div>
+                          </Button>
+                        </div>
+                      </ContextMenuTrigger>
+                      <ContextMenuContent>
+                        <ContextMenuItem
+                          onClick={() => handleDeleteClick(chat.chatId)}
+                          className="text-red-400 focus:text-red-400 focus:bg-red-950"
+                        >
+                          Delete Chat
+                        </ContextMenuItem>
+                      </ContextMenuContent>
+                    </ContextMenu>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          {/* User Account Navigation */}
+          <div className="p-2">
+            {session?.user ? (
+              <UserAccountNav user={session.user} />
+            ) : (
+              <div>
+                <div className="flex gap-2">
                   <button
-                    onClick={(e) => handleDeleteClick(e, chat.chatId)}
-                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-600 hover:bg-red-700 text-white rounded p-1 text-xs"
-                    title="Delete chat"
+                    onClick={() => signIn("google")}
+                    className="flex-1 bg-neutral-800/50 hover:bg-neutral-800/70 p-4 flex items-center justify-center rounded-lg cursor-pointer"
+                    aria-label="Sign in with Google"
+                    type="button"
                   >
-                    <svg
-                      className="w-3 h-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                      />
-                    </svg>
+                    <GoogleLogo size={16} className="text-neutral-100" />
+                  </button>
+                  <button
+                    onClick={() => signIn("github")}
+                    className="flex-1 bg-neutral-800/50 hover:bg-neutral-800/70 p-4 flex items-center justify-center rounded-lg cursor-pointer"
+                    aria-label="Sign in with GitHub"
+                    type="button"
+                  >
+                    <GithubLogo size={16} className="text-neutral-100" />
                   </button>
                 </div>
-              ))}
-            </div>
-          ) : null}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* User Account Navigation */}
-      <div className="border-t border-neutral-700 p-4">
-        {session?.user ? (
-          <UserAccountNav user={session.user} />
-        ) : (
-          <button
-            onClick={() => signIn("github")}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-          >
-            Sign In with GitHub
-          </button>
-        )}
       </div>
 
       {/* Delete Confirmation Modal */}
@@ -146,18 +220,20 @@ export function ChatSidebar({
               undone.
             </p>
             <div className="flex gap-3 justify-end">
-              <button
+              <Button
                 onClick={cancelDelete}
-                className="px-4 py-2 bg-neutral-600 text-white rounded hover:bg-neutral-700 transition-colors"
+                variant="ghost"
+                className="bg-neutral-600 text-white hover:bg-neutral-700"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={() => confirmDelete(showDeleteConfirm)}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
+                variant="destructive"
+                className="bg-red-600 text-white hover:bg-red-700"
               >
                 Delete
-              </button>
+              </Button>
             </div>
           </div>
         </div>

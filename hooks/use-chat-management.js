@@ -39,7 +39,7 @@ export function useChatManagement() {
   // Delete chat function
   const deleteChat = async (chatId) => {
     try {
-      const res = await fetch(`/api/chats/${chatId}`, {
+      const res = await fetch(`/api/chats/${chatId}/details`, {
         method: "DELETE",
       });
 
