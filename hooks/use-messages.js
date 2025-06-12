@@ -4,7 +4,6 @@ export function useMessages(activeChatId, isNewChatPending) {
   const [messages, setMessages] = useState([]);
   const messagesEndRef = useRef(null);
 
-  // Load messages when active chat changes
   useEffect(() => {
     if (!activeChatId || isNewChatPending) {
       setMessages([]);
@@ -13,7 +12,7 @@ export function useMessages(activeChatId, isNewChatPending) {
 
     const loadMessages = async () => {
       try {
-        const res = await fetch(`/api/chats/${activeChatId}`);
+        const res = await fetch(`/api/chats/${activeChatId}/details`);
         const chat = await res.json();
         setMessages(chat.messages || []);
       } catch (error) {
@@ -25,7 +24,6 @@ export function useMessages(activeChatId, isNewChatPending) {
     loadMessages();
   }, [activeChatId, isNewChatPending]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);

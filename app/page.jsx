@@ -1,21 +1,17 @@
 "use client";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-// Hooks
 import { useChatManagement } from "@/hooks/use-chat-management";
 import { useMessages } from "@/hooks/use-messages";
 import { useWebSocket } from "@/hooks/use-websocket";
-// Components
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { ChatContainer } from "@/components/chat/chat-container";
-import { SignInPrompt } from "@/components/auth/sign-in-prompt";
 import { LoadingScreen } from "@/components/auth/loading-screen";
 
 export default function HomePage() {
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
 
-  // Custom hooks
   const {
     chats,
     activeChatId,
@@ -40,15 +36,12 @@ export default function HomePage() {
     setIsLoading,
   );
 
-  // Loading state
   if (status === "loading") {
     return <LoadingScreen />;
   }
 
-  // Main application
   return (
     <div className="flex h-screen">
-      {/* Sidebar - now handles its own collapse logic */}
       <ChatSidebar
         chats={chats}
         activeChatId={activeChatId}
@@ -58,7 +51,6 @@ export default function HomePage() {
         isNewChatPending={isNewChatPending}
       />
 
-      {/* Main Chat Area */}
       <div className="flex-1 flex min-w-0">
         <ChatContainer
           chats={chats}

@@ -1,15 +1,10 @@
-// app/api/chats/[chatId]/messages/route.js
-
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
+import { auth } from "@/lib/auth";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
-// 1. Import from the built-in 'crypto' module instead of 'uuid'
-import { randomUUID } from "crypto";
 
 export async function POST(request, { params }) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -28,8 +23,12 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // 2. Use randomUUID() to generate the ID. It's a simple function call.
-  const message = { id: randomUUID(), role, content, timestamp: new Date() };
+  const message = {
+    id: Date.now().toString(),
+    role,
+    content,
+    timestamp: new Date(),
+  };
   chat.messages.push(message);
   await chat.save();
   return NextResponse.json(message);
