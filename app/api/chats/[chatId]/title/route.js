@@ -17,7 +17,23 @@ export async function POST(request, { params }) {
   try {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
 
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    // Use consistent environment variable name (try both for compatibility)
+    const googleAiKey =
+      process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+    if (!googleAiKey) {
+      console.error(
+        "Google AI API key not found. Checked GOOGLE_AI_API_KEY and GEMINI_API_KEY",
+      );
+      return NextResponse.json(
+        {
+          error: "AI service configuration error",
+          title: "New Chat",
+        },
+        { status: 500 },
+      );
+    }
+
+    const genAI = new GoogleGenerativeAI(googleAiKey);
 
     await connectDB();
 

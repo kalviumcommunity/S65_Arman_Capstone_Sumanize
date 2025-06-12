@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ArrowLineUp } from "@phosphor-icons/react";
+import { ArrowUp, Globe, Paperclip, CaretDown } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 export function ChatInput({
@@ -8,7 +8,7 @@ export function ChatInput({
   isNewChatPending,
   generateChatTitle,
   messages,
-  ws,
+  ably,
 }) {
   const [input, setInput] = useState("");
   const textareaRef = useRef(null);
@@ -23,9 +23,14 @@ export function ChatInput({
       return;
     }
 
-    const userMessage = { role: "user", content: messageContent };
-    setInput("");
+    const userMessage = {
+      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      role: "user",
+      content: messageContent,
+      timestamp: new Date(),
+    };
 
+    setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -43,19 +48,11 @@ export function ChatInput({
       }, 500);
     }
 
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      try {
-        ws.current.send(
-          JSON.stringify({
-            type: "message",
-            content: userMessage.content,
-            chatId: currentChatId,
-            timestamp: Date.now(),
-          }),
-        );
-      } catch (sendError) {
-        console.error("Failed to send message via WebSocket:", sendError);
-      }
+    // Send message through Ably
+    const success = await ably.sendMessage(userMessage, currentChatId);
+    if (!success) {
+      console.error("Failed to send message");
+      // Optionally show user feedback here
     }
   };
 
@@ -69,44 +66,47 @@ export function ChatInput({
   const handleAutoResize = (e) => {
     const textarea = e.target;
     textarea.style.height = "auto";
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 180)}px`;
+    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   };
 
   return (
-    <div className="p-4 mb-4">
-      <form onSubmit={handleSubmit} className="max-w-3xl mx-auto">
-        <div className="rounded-2xl border-6 border-neutral-800/50 bg-neutral-900/70 p-3 shadow-2xl backdrop-blur-xl">
-          <div className="flex flex-col">
+    <div className="w-full flex justify-center px-4 py-4">
+      <div className="w-full max-w-2xl">
+        <form
+          onSubmit={handleSubmit}
+          // This is the main container rectangle
+          className="flex items-end gap-3 rounded-xl bg-neutral-900 border-4 border-neutral-800 p-3 shadow-lg"
+        >
+          {/* Left side container for textarea and controls */}
+          <div className="flex flex-col flex-1">
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              onInput={handleAutoResize}
+              onChange={(e) => {
+                setInput(e.target.value);
+                handleAutoResize(e);
+              }}
+              onKeyDown={handleKeyPress}
               placeholder={
                 isNewChatPending
-                  ? "Type your first message to start a new chat..."
+                  ? "Start a new conversation..."
                   : "Type your message here..."
               }
+              className="w-full min-h-[40px] max-h-[200px] bg-transparent px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus:outline-none text-sm"
               disabled={isLoading}
               rows={1}
-              className="w-full resize-none border-none bg-transparent p-2 leading-6 text-neutral-200 placeholder:text-neutral-500 focus:outline-none focus:ring-0 disabled:cursor-not-allowed disabled:opacity-50"
-              style={{ minHeight: "28px", maxHeight: "180px" }}
             />
-            <div className="mt-2 flex items-center justify-end">
-              <Button
-                type="submit"
-                disabled={isLoading || !input.trim()}
-                size="icon"
-                className="h-9 w-9 rounded-lg bg-neutral-800 text-white transition-colors hover:bg-neutral-800/70 disabled:bg-neutral-700 disabled:opacity-60"
-              >
-                <ArrowLineUp className="h-5 w-5" />
-                <span className="sr-only">Send Message</span>
-              </Button>
-            </div>
           </div>
-        </div>
-      </form>
+          {/* Submit Button (now inside the main container) */}
+          <Button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="h-9 w-9 flex-shrink-0 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 hover:scale-105"
+          >
+            <ArrowUp size={16} className="text-white" />
+          </Button>
+        </form>
+      </div>
     </div>
   );
 }

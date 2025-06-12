@@ -1,6 +1,8 @@
+import { useSession } from "next-auth/react";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
+import { EmptyState } from "./empty-state";
 
 export function ChatContainer({
   chats,
@@ -11,96 +13,96 @@ export function ChatContainer({
   messagesEndRef,
   createNewChat,
   generateChatTitle,
-  ws,
+  ably,
   isLoading,
   setIsLoading,
   isAuthenticated,
 }) {
-  const activeChat = chats.find((chat) => chat.chatId === activeChatId);
-  const chatTitle = activeChat?.title;
+  const { data: session } = useSession();
 
   const handleSendMessage = async (userMessage, messageContent) => {
-    if (!isAuthenticated) {
-      const totalUserMessages = chats.reduce((acc, chat) => {
-        const userMessages =
-          chat.messages?.filter((msg) => msg.role === "user").length || 0;
-        return acc + userMessages;
-      }, 0);
-
-      if (totalUserMessages >= 5) {
-        alert(
-          "You have reached your message limit. Please sign in to continue.",
-        );
-        return null;
-      }
-    }
-    setIsLoading(true);
-
-    let currentChatId = activeChatId;
-    if (isNewChatPending) {
-      currentChatId = await createNewChat();
-      if (!currentChatId) {
-        setIsLoading(false);
-        alert("Failed to create new chat. Please try again.");
-        return null;
-      }
-    }
-
     try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000);
+      let chatId = activeChatId;
 
-      const res = await fetch(`/api/chats/${currentChatId}/messages`, {
+      if (isNewChatPending) {
+        const newChatId = await createNewChat();
+        if (!newChatId) {
+          console.error("Failed to create new chat");
+          return null;
+        }
+        chatId = newChatId;
+      }
+
+      setMessages((prev) => [...prev, userMessage]);
+
+      const response = await fetch(`/api/chats/${chatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(userMessage),
-        signal: controller.signal,
+        body: JSON.stringify({
+          role: userMessage.role,
+          content: userMessage.content,
+        }),
       });
 
-      clearTimeout(timeoutId);
-
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+      if (!response.ok) {
+        throw new Error("Failed to save message");
       }
 
-      const savedMessage = await res.json();
-      setMessages((prev) => [...prev, savedMessage]);
-
-      return currentChatId;
+      return chatId;
     } catch (error) {
-      console.error("Failed to send message:", error);
-      setIsLoading(false);
-
-      if (error.name === "AbortError") {
-        alert("Request timed out. Please try again.");
-      } else {
-        alert("Failed to send message. Please try again.");
-      }
+      console.error("Error sending message:", error);
+      setMessages((prev) => prev.filter((msg) => msg !== userMessage));
       return null;
     }
   };
 
+  const activeChat = chats.find((chat) => chat.chatId === activeChatId);
+  const chatTitle = isNewChatPending ? "New Chat" : activeChat?.title || "Chat";
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="text-center space-y-4">
+          <h2 className="text-2xl font-semibold text-neutral-300">
+            Welcome to Sumanize
+          </h2>
+          <p className="text-neutral-400">
+            Please sign in to start chatting with the AI assistant.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  const showEmptyState = !activeChatId || (messages.length === 0 && !isLoading);
+
   return (
-    <div className="flex flex-1 flex-col min-w-0">
+    <div className="flex-1 flex flex-col min-w-0">
       <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 
-      <ChatMessages
-        messages={messages}
-        isLoading={isLoading}
-        isNewChatPending={isNewChatPending}
-        messagesEndRef={messagesEndRef}
-      />
+      <div className="flex-1 flex flex-col min-h-0">
+        {showEmptyState ? (
+          <EmptyState isNewChatPending={isNewChatPending} />
+        ) : (
+          <ChatMessages
+            messages={messages}
+            isLoading={isLoading}
+            isNewChatPending={isNewChatPending}
+            messagesEndRef={messagesEndRef}
+          />
+        )}
 
-      <ChatInput
-        onSendMessage={handleSendMessage}
-        isLoading={isLoading}
-        isNewChatPending={isNewChatPending}
-        createNewChat={createNewChat}
-        generateChatTitle={generateChatTitle}
-        setMessages={setMessages}
-        messages={messages}
-        ws={ws}
-      />
+        <div className="p-4">
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isLoading={isLoading}
+            isNewChatPending={isNewChatPending}
+            generateChatTitle={generateChatTitle}
+            messages={messages}
+            ably={ably}
+          />
+        </div>
+      </div>
     </div>
   );
 }

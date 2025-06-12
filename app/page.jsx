@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useChatManagement } from "@/hooks/use-chat-management";
 import { useMessages } from "@/hooks/use-messages";
-import { useWebSocket } from "@/hooks/use-websocket";
+import { useAbly } from "@/hooks/use-ably";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { ChatContainer } from "@/components/chat/chat-container";
 import { LoadingScreen } from "@/components/auth/loading-screen";
@@ -29,7 +29,7 @@ export default function HomePage() {
     isNewChatPending,
   );
 
-  const { ws } = useWebSocket(
+  const ably = useAbly(
     activeChatId,
     isNewChatPending,
     setMessages,
@@ -61,7 +61,7 @@ export default function HomePage() {
           messagesEndRef={messagesEndRef}
           createNewChat={createNewChat}
           generateChatTitle={generateChatTitle}
-          ws={ws}
+          ably={ably}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
           isAuthenticated={isAuthenticated}
