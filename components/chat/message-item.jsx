@@ -33,10 +33,8 @@ const MarkdownComponents = {
 };
 
 export function MessageItem({ message }) {
-  // --- USER MESSAGE LOGIC ---
   if (message.role === "user") {
-    // 2. Define a character limit and manage the expanded state
-    const TRUNCATE_THRESHOLD = 350; // Characters to show when collapsed
+    const TRUNCATE_THRESHOLD = 350;
     const [isExpanded, setIsExpanded] = useState(false);
 
     const needsTruncation = message.content.length > TRUNCATE_THRESHOLD;
@@ -59,7 +57,6 @@ export function MessageItem({ message }) {
               {displayedContent}
             </ReactMarkdown>
 
-            {/* 3. Show a "Show more/less" button if needed */}
             {needsTruncation && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
@@ -74,7 +71,6 @@ export function MessageItem({ message }) {
     );
   }
 
-  // --- AI MESSAGE LOGIC (Unchanged) ---
   return (
     <div className="flex items-start gap-4">
       <div className="flex min-w-0 flex-col p-6">

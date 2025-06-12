@@ -21,7 +21,6 @@ export function useWebSocket(
     let connectionId = null;
 
     const connectWebSocket = () => {
-      // Clear any existing connection
       if (ws.current) {
         ws.current.removeAllListeners?.();
         if (
@@ -39,14 +38,12 @@ export function useWebSocket(
           `ws://localhost:3001?chatId=${activeChatId}&userId=${session.user.id}`,
         );
 
-        // Connection opened successfully
         ws.current.onopen = () => {
           console.log(`WebSocket ${connectionId} connected`);
           reconnectAttempts = 0;
           setIsLoading(false);
         };
 
-        // Message handler with enhanced error handling
         ws.current.onmessage = async (event) => {
           try {
             const data = JSON.parse(event.data);
@@ -61,7 +58,6 @@ export function useWebSocket(
             }
 
             if (data.type === "chunk") {
-              // Update the last assistant message with new chunk
               setMessages((prev) => {
                 const newMessages = [...prev];
                 const lastMessage = newMessages[newMessages.length - 1];
@@ -82,7 +78,6 @@ export function useWebSocket(
             }
 
             if (data.type === "complete") {
-              // Save the complete assistant message to database
               try {
                 const res = await fetch(`/api/chats/${activeChatId}/messages`, {
                   method: "POST",
@@ -125,14 +120,12 @@ export function useWebSocket(
           }
         };
 
-        // Connection closed handler with reconnection logic
         ws.current.onclose = (event) => {
           console.log(
             `WebSocket ${connectionId} disconnected: code=${event.code}, reason=${event.reason || "none"}`,
           );
           setIsLoading(false);
 
-          // Only attempt reconnection for unexpected closures
           if (
             event.code !== 1000 &&
             event.code !== 1001 &&
@@ -141,7 +134,7 @@ export function useWebSocket(
             const delay = Math.min(
               1000 * Math.pow(2, reconnectAttempts),
               10000,
-            ); // Exponential backoff, max 10s
+            );
             console.log(
               `Scheduling reconnection attempt ${reconnectAttempts + 1}/${maxReconnectAttempts} in ${delay}ms`,
             );
@@ -160,7 +153,6 @@ export function useWebSocket(
           }
         };
 
-        // Connection error handler
         ws.current.onerror = (error) => {
           console.error(`WebSocket ${connectionId} connection error:`, error);
           setIsLoading(false);
@@ -171,10 +163,8 @@ export function useWebSocket(
       }
     };
 
-    // Initial connection
     connectWebSocket();
 
-    // Cleanup function
     return () => {
       if (reconnectTimeout) {
         clearTimeout(reconnectTimeout);

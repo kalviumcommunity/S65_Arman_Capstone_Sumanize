@@ -18,7 +18,7 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from "@/components/ui/context-menu";
-import UserAccountNav from "../user-account";
+import UserAccount from "./user-account";
 
 export function ChatSidebar({
   chats = [],
@@ -134,10 +134,10 @@ export function ChatSidebar({
                           <Button
                             onClick={() => onSelectChat(chat.chatId)}
                             variant="ghost"
-                            className={`w-full text-left justify-start p-2 text-neutral-100 h-auto cursor-pointer ${
+                            className={`w-full text-left justify-start p-2 h-auto cursor-pointer ${
                               chat.chatId === activeChatId
-                                ? "bg-neutral-900 hover:bg-neutral-900 hover:text-neutral-100"
-                                : "text-neutral-100 hover:bg-neutral-900 hover:text-neutral-100"
+                                ? "bg-neutral-950 hover:bg-neutral-950 hover:text-neutral-300"
+                                : "hover:bg-neutral-900/50 hover:text-neutral-300"
                             }`}
                           >
                             <div className="w-full">
@@ -181,7 +181,7 @@ export function ChatSidebar({
           {/* User Account Navigation */}
           <div className="p-2">
             {session?.user ? (
-              <UserAccountNav user={session.user} />
+              <UserAccount user={session.user} />
             ) : (
               <div>
                 <div className="flex gap-2">
@@ -191,7 +191,11 @@ export function ChatSidebar({
                     aria-label="Sign in with Google"
                     type="button"
                   >
-                    <GoogleLogo size={16} className="text-neutral-100" />
+                    <GoogleLogo
+                      size={16}
+                      weight="bold"
+                      className="text-neutral-100"
+                    />
                   </button>
                   <button
                     onClick={() => signIn("github")}
@@ -199,7 +203,11 @@ export function ChatSidebar({
                     aria-label="Sign in with GitHub"
                     type="button"
                   >
-                    <GithubLogo size={16} className="text-neutral-100" />
+                    <GithubLogo
+                      size={16}
+                      weight="bold"
+                      className="text-neutral-100"
+                    />
                   </button>
                 </div>
               </div>

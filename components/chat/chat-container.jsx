@@ -20,7 +20,6 @@ export function ChatContainer({
   const chatTitle = activeChat?.title;
 
   const handleSendMessage = async (userMessage, messageContent) => {
-    // ... (your existing handleSendMessage function)
     if (!isAuthenticated) {
       const totalUserMessages = chats.reduce((acc, chat) => {
         const userMessages =
@@ -82,7 +81,6 @@ export function ChatContainer({
   };
 
   return (
-    // THE FIX: Add `min-w-0` to allow this container to shrink on small screens
     <div className="flex flex-1 flex-col min-w-0">
       <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 

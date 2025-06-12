@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/context-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-export default function UserAccountNav({ user }) {
+export default function UserAccount({ user }) {
   const firstLetter =
     user && user.name && typeof user.name === "string"
       ? user.name.charAt(0).toUpperCase()

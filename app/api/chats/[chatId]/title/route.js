@@ -1,15 +1,10 @@
-// app/api/chats/[chatId]/title/route.js
-
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/lib/auth";
-// REMOVE the static import from here
-// import { GoogleGenerativeAI } from "@google/generative-ai";
+import { auth } from "@/lib/auth";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
 
 export async function POST(request, { params }) {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
@@ -20,10 +15,8 @@ export async function POST(request, { params }) {
   }
 
   try {
-    // 1. Dynamically import the SDK *inside* the handler
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
 
-    // 2. Initialize the client right after importing it
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
     await connectDB();
