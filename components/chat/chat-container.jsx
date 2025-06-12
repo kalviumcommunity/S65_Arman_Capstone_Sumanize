@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
@@ -21,6 +20,7 @@ export function ChatContainer({
   const chatTitle = activeChat?.title;
 
   const handleSendMessage = async (userMessage, messageContent) => {
+    // ... (your existing handleSendMessage function)
     if (!isAuthenticated) {
       const totalUserMessages = chats.reduce((acc, chat) => {
         const userMessages =
@@ -37,7 +37,6 @@ export function ChatContainer({
     }
     setIsLoading(true);
 
-    // If this is a pending new chat, create the chat first
     let currentChatId = activeChatId;
     if (isNewChatPending) {
       currentChatId = await createNewChat();
@@ -49,7 +48,6 @@ export function ChatContainer({
     }
 
     try {
-      // Save user message to database with timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
 
@@ -71,7 +69,7 @@ export function ChatContainer({
 
       return currentChatId;
     } catch (error) {
-      console.error("❌ Failed to send message:", error);
+      console.error("Failed to send message:", error);
       setIsLoading(false);
 
       if (error.name === "AbortError") {
@@ -84,7 +82,8 @@ export function ChatContainer({
   };
 
   return (
-    <div className="flex flex-col flex-1">
+    // THE FIX: Add `min-w-0` to allow this container to shrink on small screens
+    <div className="flex flex-1 flex-col min-w-0">
       <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 
       <ChatMessages

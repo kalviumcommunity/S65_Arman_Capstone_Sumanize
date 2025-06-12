@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"next dev --turbopack\"  \"nodemon websocket-server.js\"",
+    "dev": "concurrently \"next dev --turbopack\"  \"nodemon websockets/index.js\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"

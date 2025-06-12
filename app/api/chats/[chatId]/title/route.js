@@ -1,11 +1,12 @@
+// app/api/chats/[chatId]/title/route.js
+
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { authOptions } from "@/lib/auth";
+// REMOVE the static import from here
+// import { GoogleGenerativeAI } from "@google/generative-ai";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 export async function POST(request, { params }) {
   const session = await getServerSession(authOptions);
@@ -18,19 +19,23 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
 
-  await connectDB();
-
-  // Verify the chat exists and belongs to the user
-  const chat = await Chat.findOne({
-    chatId: params.chatId,
-    userId: session.user.id,
-  });
-  if (!chat) {
-    return NextResponse.json({ error: "Chat not found" }, { status: 404 });
-  }
-
   try {
-    // Generate title using Gemini API
+    // 1. Dynamically import the SDK *inside* the handler
+    const { GoogleGenerativeAI } = await import("@google/generative-ai");
+
+    // 2. Initialize the client right after importing it
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+    await connectDB();
+
+    const chat = await Chat.findOne({
+      chatId: params.chatId,
+      userId: session.user.id,
+    });
+    if (!chat) {
+      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+    }
+
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
     const prompt = `Based on this user message, generate a short, descriptive title (max 50 characters) for a chat conversation. Only return the title, nothing else:
@@ -41,18 +46,15 @@ export async function POST(request, { params }) {
     const response = await result.response;
     let title = response.text().trim();
 
-    // Clean up the title - remove quotes, ensure it's under 50 chars
-    title = title.replace(/^["']|["']$/g, ""); // Remove surrounding quotes
+    title = title.replace(/^["']|["']$/g, "");
     if (title.length > 50) {
       title = title.substring(0, 47) + "...";
     }
 
-    // Fallback if title is empty or too short
     if (title.length < 3) {
       title = "New Chat";
     }
 
-    // Update the chat title in the database
     await Chat.updateOne(
       { chatId: params.chatId, userId: session.user.id },
       { title: title },
@@ -64,7 +66,7 @@ export async function POST(request, { params }) {
     return NextResponse.json(
       {
         error: "Failed to generate title",
-        title: "New Chat", // Fallback title
+        title: "New Chat",
       },
       { status: 500 },
     );
