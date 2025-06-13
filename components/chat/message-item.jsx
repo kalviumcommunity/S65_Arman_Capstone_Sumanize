@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { CaretDown, CaretRight, Paperclip } from "@phosphor-icons/react";
 
 const MarkdownComponents = {
   h1: ({ node, ...props }) => (
@@ -36,6 +37,8 @@ export function MessageItem({ message }) {
   if (message.role === "user") {
     const TRUNCATE_THRESHOLD = 350;
     const [isExpanded, setIsExpanded] = useState(false);
+    const [isPastedContentExpanded, setIsPastedContentExpanded] =
+      useState(false);
 
     const needsTruncation = message.content.length > TRUNCATE_THRESHOLD;
 
@@ -46,7 +49,49 @@ export function MessageItem({ message }) {
 
     return (
       <div className="flex items-start gap-4">
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-col w-full">
+          {/* Pasted Content Section - Collapsible */}
+          {message.pastedContent && (
+            <div className="mb-3 border border-neutral-700 rounded-lg bg-neutral-800/30">
+              <button
+                onClick={() =>
+                  setIsPastedContentExpanded(!isPastedContentExpanded)
+                }
+                className="w-full flex items-center justify-between p-3 hover:bg-neutral-800/50 transition-colors"
+              >
+                <div className="flex items-center gap-2 text-sm text-neutral-400">
+                  <Paperclip size={16} />
+                  <span>
+                    Pasted content ({message.pastedContent.length} characters)
+                  </span>
+                </div>
+                {isPastedContentExpanded ? (
+                  <CaretDown size={16} className="text-neutral-400" />
+                ) : (
+                  <CaretRight size={16} className="text-neutral-400" />
+                )}
+              </button>
+
+              {isPastedContentExpanded && (
+                <div className="px-3 pb-3">
+                  <div className="bg-neutral-900/50 rounded p-3 max-h-96 overflow-y-auto">
+                    <ReactMarkdown
+                      components={{
+                        ...MarkdownComponents,
+                        p: ({ node, ...props }) => (
+                          <p className="mb-2 last:mb-0" {...props} />
+                        ),
+                      }}
+                    >
+                      {message.pastedContent}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* User Prompt Section */}
           <div className="rounded-xl bg-neutral-800/50 p-6">
             <ReactMarkdown
               components={{
@@ -72,7 +117,7 @@ export function MessageItem({ message }) {
   }
 
   return (
-    <div className="flex items-start gap-4 font-serif text-lg">
+    <div className="flex items-start gap-4 text-lg">
       <div className="flex min-w-0 flex-col p-6">
         <ReactMarkdown components={MarkdownComponents}>
           {message.content}

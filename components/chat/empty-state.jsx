@@ -12,6 +12,10 @@ export function EmptyState({ isNewChatPending }) {
           Transform complex documents and datasets into clear, actionable
           insights. Start by typing your message below.
         </p>
+        <div className="text-xs text-neutral-600 bg-neutral-800/30 rounded-lg p-3 max-w-md mx-auto mt-4">
+          <strong>💡 Pro tip:</strong> Paste large documents directly - they'll
+          be organized separately from your prompt for a cleaner conversation
+        </div>
       </div>
     </div>
   );

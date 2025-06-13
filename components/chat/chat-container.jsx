@@ -23,11 +23,18 @@ export function ChatContainer({
 }) {
   const { data: session } = useSession();
 
-  const handleSendMessage = async (messageContent) => {
+  const handleSendMessage = async (messageData) => {
+    // Handle both old string format and new object format for backwards compatibility
+    const messageContent =
+      typeof messageData === "string" ? messageData : messageData.content;
+    const pastedContent =
+      typeof messageData === "object" ? messageData.pastedContent : null;
+
     const userMessage = {
       id: `user-${Date.now()}`,
       role: "user",
       content: messageContent,
+      pastedContent: pastedContent,
       timestamp: new Date(),
       completed: true,
     };
@@ -58,6 +65,7 @@ export function ChatContainer({
         body: JSON.stringify({
           role: userMessage.role,
           content: userMessage.content,
+          pastedContent: userMessage.pastedContent,
         }),
       });
 

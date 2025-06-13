@@ -9,7 +9,7 @@ export async function POST(request, { params }) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { role, content } = await request.json();
+  const { role, content, pastedContent } = await request.json();
   if (!role || !content) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
@@ -27,6 +27,7 @@ export async function POST(request, { params }) {
     id: Date.now().toString(),
     role,
     content,
+    pastedContent: pastedContent || undefined,
     timestamp: new Date(),
   };
   chat.messages.push(message);
