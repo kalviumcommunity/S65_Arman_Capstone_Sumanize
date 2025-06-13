@@ -50,7 +50,6 @@ export function MessageItem({ message }) {
     return (
       <div className="flex items-start gap-4">
         <div className="flex min-w-0 flex-col w-full">
-          {/* Pasted Content Section - Collapsible */}
           {message.pastedContent && (
             <div className="mb-3 border border-neutral-700 rounded-lg bg-neutral-800/30">
               <button
@@ -91,33 +90,40 @@ export function MessageItem({ message }) {
             </div>
           )}
 
-          {/* User Prompt Section */}
-          <div className="rounded-xl bg-neutral-800/50 p-6">
-            <ReactMarkdown
-              components={{
-                ...MarkdownComponents,
-                p: ({ node, ...props }) => <p className="my-0" {...props} />,
-              }}
-            >
-              {displayedContent}
-            </ReactMarkdown>
-
-            {needsTruncation && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="mt-2 text-sm cursor-pointer opacity-80 hover:opacity-100"
+          {message.content && message.content.trim() && (
+            <div className="rounded-xl bg-neutral-800/50 p-6">
+              <ReactMarkdown
+                components={{
+                  ...MarkdownComponents,
+                  p: ({ node, ...props }) => <p className="my-0" {...props} />,
+                }}
               >
-                {isExpanded ? "Show less" : "Show more"}
-              </button>
-            )}
-          </div>
+                {displayedContent}
+              </ReactMarkdown>
+
+              {needsTruncation && (
+                <button
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="mt-2 text-sm cursor-pointer opacity-80 hover:opacity-100"
+                >
+                  {isExpanded ? "Show less" : "Show more"}
+                </button>
+              )}
+            </div>
+          )}
+
+          {!message.content?.trim() && message.pastedContent && (
+            <div className="rounded-xl bg-neutral-800/30 p-4 text-center text-sm text-neutral-400 italic">
+              Content shared without additional prompt
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex items-start gap-4 text-lg">
+    <div className="flex items-start gap-4 font-serif text-lg">
       <div className="flex min-w-0 flex-col p-6">
         <ReactMarkdown components={MarkdownComponents}>
           {message.content}

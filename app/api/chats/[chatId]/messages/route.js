@@ -10,7 +10,9 @@ export async function POST(request, { params }) {
   }
 
   const { role, content, pastedContent } = await request.json();
-  if (!role || !content) {
+
+  // Validate that we have a role and at least one form of content
+  if (!role || (!content && !pastedContent)) {
     return NextResponse.json({ error: "Missing fields" }, { status: 400 });
   }
 
@@ -26,7 +28,7 @@ export async function POST(request, { params }) {
   const message = {
     id: Date.now().toString(),
     role,
-    content,
+    content: content || "", // Provide empty string if no content
     pastedContent: pastedContent || undefined,
     timestamp: new Date(),
   };

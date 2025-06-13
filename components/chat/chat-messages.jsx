@@ -7,11 +7,15 @@ export function ChatMessages({
   isLoading,
   isNewChatPending,
   messagesEndRef,
+  onSendMessage,
 }) {
   if (messages.length === 0 && !isLoading) {
     return (
       <main className="flex-1 flex items-center justify-center p-4">
-        <EmptyState isNewChatPending={isNewChatPending} />
+        <EmptyState
+          isNewChatPending={isNewChatPending}
+          onSendMessage={onSendMessage}
+        />
       </main>
     );
   }

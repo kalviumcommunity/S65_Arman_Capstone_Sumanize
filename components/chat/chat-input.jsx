@@ -9,15 +9,12 @@ export function ChatInput({ onSendMessage, isLoading }) {
 
   const PASTE_THRESHOLD = 500;
 
-  // --- FIX #1: The logic to determine if a message can be sent ---
   const canSubmit = (input.trim().length > 0 || pastedContent) && !isLoading;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const messageContent = textareaRef.current?.value.trim();
 
-    // --- FIX #2: Update the guard clause to use the new logic ---
-    // A message is valid if it has typed content OR pasted content.
     if (!messageContent && !pastedContent) return;
 
     const messageData = {
@@ -83,8 +80,8 @@ export function ChatInput({ onSendMessage, isLoading }) {
   };
 
   return (
-    <div className="w-full flex justify-center px-4 py-4">
-      <div className="w-full max-w-2xl">
+    <div className="w-full">
+      <div className="w-full">
         {pastedContent && (
           <div className="mb-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
             <div className="flex items-center justify-between mb-2">
@@ -105,8 +102,8 @@ export function ChatInput({ onSendMessage, isLoading }) {
             </div>
             {!input.trim() && (
               <div className="mt-2 text-xs text-neutral-500 bg-neutral-900/30 p-2 rounded">
-                💡 Add a question or instruction about this content in the
-                message box below
+                Add a question or instruction about this content in the message
+                box below
               </div>
             )}
           </div>
@@ -131,14 +128,13 @@ export function ChatInput({ onSendMessage, isLoading }) {
                   ? "Add your question or prompt..."
                   : "Type your message here..."
               }
-              className="w-full min-h-[40px] max-h-[200px] bg-transparent px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus:outline-none text-sm"
+              className="w-full min-h-[56px] max-h-[200px] bg-transparent px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus:outline-none text-sm"
               disabled={isLoading}
-              rows={1}
+              rows={2}
             />
           </div>
           <Button
             type="submit"
-            // --- FIX #3: Use the new logic for the disabled state ---
             disabled={!canSubmit}
             className="h-9 w-9 flex-shrink-0 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 hover:scale-105"
           >
