@@ -14,7 +14,6 @@ export function useAbly(
   const [connectionError, setConnectionError] = useState(null);
   const isAuthenticated = session?.user?.id;
 
-  // Initialize Ably connection immediately when user is authenticated
   useEffect(() => {
     if (!isAuthenticated) {
       cleanup();
@@ -25,12 +24,8 @@ export function useAbly(
 
     const initializeAbly = async () => {
       try {
-        console.log(
-          "🔗 Initializing Ably connection for user:",
-          session.user.id,
-        );
+        console.log("Initializing Ably connection for user:", session.user.id);
 
-        // Create Ably client with token authentication
         const ably = new Ably.Realtime({
           authUrl: "/api/ably/token",
           authMethod: "POST",
@@ -41,10 +36,9 @@ export function useAbly(
 
         ablyRef.current = ably;
 
-        // Connection event handlers
         ably.connection.on("connected", () => {
           if (mounted) {
-            console.log("✅ Ably connected successfully");
+            console.log("Ably connected successfully");
             setIsConnected(true);
             setConnectionError(null);
           }
@@ -52,14 +46,14 @@ export function useAbly(
 
         ably.connection.on("disconnected", () => {
           if (mounted) {
-            console.log("⚠️ Ably disconnected");
+            console.log("Ably disconnected");
             setIsConnected(false);
           }
         });
 
         ably.connection.on("failed", (stateChange) => {
           if (mounted) {
-            console.error("❌ Ably connection failed:", stateChange.reason);
+            console.error("Ably connection failed:", stateChange.reason);
             setIsConnected(false);
             setConnectionError(
               stateChange.reason?.message || "Connection failed",
@@ -69,12 +63,12 @@ export function useAbly(
 
         ably.connection.on("suspended", () => {
           if (mounted) {
-            console.warn("⏸️ Ably connection suspended");
+            console.warn("Ably connection suspended");
             setIsConnected(false);
           }
         });
       } catch (error) {
-        console.error("❌ Ably initialization error:", error);
+        console.error("Ably initialization error:", error);
         if (mounted) {
           setConnectionError(error.message);
           setIsConnected(false);
@@ -90,13 +84,12 @@ export function useAbly(
     };
   }, [isAuthenticated, session?.user?.id]);
 
-  // Subscribe to channels when we have an active chat
   useEffect(() => {
     if (!isConnected || !ablyRef.current || !activeChatId || isNewChatPending) {
       return;
     }
 
-    console.log("📡 Subscribing to channels for chat:", activeChatId);
+    console.log("Subscribing to channels for chat:", activeChatId);
 
     const ably = ablyRef.current;
     const aiChannel = ably.channels.get(
@@ -106,7 +99,6 @@ export function useAbly(
       `ai-status:${session.user.id}:${activeChatId}`,
     );
 
-    // Handle AI chunks
     const handleAiChunk = (message) => {
       const { text, timestamp } = message.data;
 
@@ -119,11 +111,9 @@ export function useAbly(
           lastMessage.role === "assistant" &&
           !lastMessage.completed
         ) {
-          // Update existing assistant message
           lastMessage.content += text;
           lastMessage.timestamp = new Date(timestamp);
         } else {
-          // Create new assistant message
           newMessages.push({
             id: `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             role: "assistant",
@@ -137,7 +127,6 @@ export function useAbly(
       });
     };
 
-    // Handle AI completion
     const handleAiComplete = (message) => {
       const { content, timestamp } = message.data;
 
@@ -156,22 +145,21 @@ export function useAbly(
       });
 
       setIsLoading(false);
-      console.log("✅ AI response completed");
+      console.log("AI response completed");
     };
 
-    // Handle AI status
     const handleAiStarted = () => {
-      console.log("🔄 AI processing started");
+      console.log("AI processing started");
       setIsLoading(true);
     };
 
     const handleAiCompleted = () => {
-      console.log("✅ AI processing completed");
+      console.log("AI processing completed");
       setIsLoading(false);
     };
 
     const handleAiError = (message) => {
-      console.error("❌ AI processing error:", message.data.error);
+      console.error("AI processing error:", message.data.error);
       setIsLoading(false);
 
       setMessages((prev) => [
@@ -187,19 +175,14 @@ export function useAbly(
       ]);
     };
 
-    // Subscribe to events
     aiChannel.subscribe("ai-chunk", handleAiChunk);
     aiChannel.subscribe("ai-complete", handleAiComplete);
     statusChannel.subscribe("ai-started", handleAiStarted);
     statusChannel.subscribe("ai-completed", handleAiCompleted);
     statusChannel.subscribe("ai-error", handleAiError);
 
-    // Cleanup subscriptions when chat changes
     return () => {
-      console.log(
-        "🧹 Cleaning up channel subscriptions for chat:",
-        activeChatId,
-      );
+      console.log("Cleaning up channel subscriptions for chat:", activeChatId);
       aiChannel.unsubscribe();
       statusChannel.unsubscribe();
     };
@@ -214,7 +197,7 @@ export function useAbly(
 
   const cleanup = () => {
     if (ablyRef.current) {
-      console.log("🧹 Closing Ably connection");
+      console.log("Closing Ably connection");
       ablyRef.current.close();
       ablyRef.current = null;
     }
@@ -225,9 +208,8 @@ export function useAbly(
   const sendMessage = async (message, chatId) => {
     try {
       setIsLoading(true);
-      console.log("📤 Sending message to AI processing API");
+      console.log("Sending message to AI processing API");
 
-      // Send message to AI processing API - no need to wait for Ably
       const response = await fetch("/api/ai/process", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -245,10 +227,10 @@ export function useAbly(
       }
 
       const result = await response.json();
-      console.log("✅ Message sent successfully:", result);
+      console.log("Message sent successfully:", result);
       return true;
     } catch (error) {
-      console.error("❌ Failed to send message:", error);
+      console.error("Failed to send message:", error);
       setIsLoading(false);
       return false;
     }

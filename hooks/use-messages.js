@@ -5,7 +5,7 @@ export function useMessages(activeChatId, isNewChatPending) {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    if (!activeChatId || isNewChatPending) {
+    if (isNewChatPending || !activeChatId) {
       setMessages([]);
       return;
     }

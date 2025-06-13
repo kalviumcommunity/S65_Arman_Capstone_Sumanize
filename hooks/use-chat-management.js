@@ -14,7 +14,7 @@ export function useChatManagement() {
     setIsNewChatPending(true);
   };
 
-  const createNewChat = async () => {
+  const createNewChatInBackend = async () => {
     try {
       const res = await fetch("/api/chats", {
         method: "POST",
@@ -23,13 +23,11 @@ export function useChatManagement() {
 
       if (res.ok) {
         const newChat = await res.json();
-        setChats((prev) => [newChat, ...prev]);
-        setActiveChatId(newChat.chatId);
-        setIsNewChatPending(false);
-        return newChat.chatId;
+        return newChat;
       }
+      return null;
     } catch (error) {
-      console.error("Failed to create new chat:", error);
+      console.error("Failed to create new chat in backend:", error);
       return null;
     }
   };
@@ -131,7 +129,7 @@ export function useChatManagement() {
     setIsNewChatPending,
     isAuthenticated,
     prepareNewChat,
-    createNewChat,
+    createNewChatInBackend,
     deleteChat,
     selectChat,
     generateChatTitle,

@@ -1,59 +1,23 @@
 import { useState, useRef } from "react";
-import { ArrowUp, Globe, Paperclip, CaretDown } from "@phosphor-icons/react";
+import { ArrowUp } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
-export function ChatInput({
-  onSendMessage,
-  isLoading,
-  isNewChatPending,
-  generateChatTitle,
-  messages,
-  ably,
-}) {
+export function ChatInput({ onSendMessage, isLoading }) {
   const [input, setInput] = useState("");
   const textareaRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    const messageContent = textareaRef.current?.value.trim();
 
-    const messageContent = input.trim();
-    if (messageContent.length > 15000) {
-      alert("Message too long. Please keep it under 15000 characters.");
-      return;
-    }
-
-    const userMessage = {
-      id: `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      role: "user",
-      content: messageContent,
-      timestamp: new Date(),
-    };
+    if (!messageContent || isLoading) return;
 
     setInput("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
 
-    const currentChatId = await onSendMessage(userMessage, messageContent);
-    if (!currentChatId) {
-      setInput(messageContent);
-      return;
-    }
-
-    const isFirstMessage = messages.length === 0;
-    if (isFirstMessage) {
-      setTimeout(() => {
-        generateChatTitle(currentChatId, messageContent);
-      }, 500);
-    }
-
-    // Send message through Ably
-    const success = await ably.sendMessage(userMessage, currentChatId);
-    if (!success) {
-      console.error("Failed to send message");
-      // Optionally show user feedback here
-    }
+    await onSendMessage(messageContent);
   };
 
   const handleKeyPress = (e) => {
@@ -74,10 +38,8 @@ export function ChatInput({
       <div className="w-full max-w-2xl">
         <form
           onSubmit={handleSubmit}
-          // This is the main container rectangle
           className="flex items-end gap-3 rounded-xl bg-neutral-900 border-4 border-neutral-800 p-3 shadow-lg"
         >
-          {/* Left side container for textarea and controls */}
           <div className="flex flex-col flex-1">
             <textarea
               ref={textareaRef}
@@ -87,17 +49,12 @@ export function ChatInput({
                 handleAutoResize(e);
               }}
               onKeyDown={handleKeyPress}
-              placeholder={
-                isNewChatPending
-                  ? "Start a new conversation..."
-                  : "Type your message here..."
-              }
+              placeholder="Type your message here..."
               className="w-full min-h-[40px] max-h-[200px] bg-transparent px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus:outline-none text-sm"
               disabled={isLoading}
               rows={1}
             />
           </div>
-          {/* Submit Button (now inside the main container) */}
           <Button
             type="submit"
             disabled={!input.trim() || isLoading}

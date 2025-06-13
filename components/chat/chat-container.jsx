@@ -6,12 +6,15 @@ import { EmptyState } from "./empty-state";
 
 export function ChatContainer({
   chats,
+  setChats,
   activeChatId,
+  setActiveChatId,
   isNewChatPending,
+  setIsNewChatPending,
   messages,
   setMessages,
   messagesEndRef,
-  createNewChat,
+  createNewChatInBackend,
   generateChatTitle,
   ably,
   isLoading,
@@ -20,22 +23,36 @@ export function ChatContainer({
 }) {
   const { data: session } = useSession();
 
-  const handleSendMessage = async (userMessage, messageContent) => {
-    try {
-      let chatId = activeChatId;
+  const handleSendMessage = async (messageContent) => {
+    const userMessage = {
+      id: `user-${Date.now()}`,
+      role: "user",
+      content: messageContent,
+      timestamp: new Date(),
+      completed: true,
+    };
 
+    let currentChatId = activeChatId;
+
+    try {
       if (isNewChatPending) {
-        const newChatId = await createNewChat();
-        if (!newChatId) {
-          console.error("Failed to create new chat");
-          return null;
+        const newChat = await createNewChatInBackend();
+        if (!newChat) {
+          throw new Error("Failed to create a new chat session.");
         }
-        chatId = newChatId;
+        currentChatId = newChat.chatId;
+
+        setChats((prev) => [newChat, ...prev]);
+        setActiveChatId(newChat.chatId);
+        setIsNewChatPending(false);
+        setMessages([userMessage]);
+
+        generateChatTitle(newChat.chatId, messageContent);
+      } else {
+        setMessages((prev) => [...prev, userMessage]);
       }
 
-      setMessages((prev) => [...prev, userMessage]);
-
-      const response = await fetch(`/api/chats/${chatId}/messages`, {
+      const saveResponse = await fetch(`/api/chats/${currentChatId}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -44,15 +61,18 @@ export function ChatContainer({
         }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to save message");
+      if (!saveResponse.ok) {
+        throw new Error("Failed to save message to the database.");
       }
 
-      return chatId;
+      const success = await ably.sendMessage(userMessage, currentChatId);
+      if (!success) {
+        throw new Error("Failed to send message to the AI for processing.");
+      }
     } catch (error) {
-      console.error("Error sending message:", error);
-      setMessages((prev) => prev.filter((msg) => msg !== userMessage));
-      return null;
+      console.error("An error occurred during message sending:", error);
+      setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
+      setIsLoading(false);
     }
   };
 
@@ -74,7 +94,7 @@ export function ChatContainer({
     );
   }
 
-  const showEmptyState = !activeChatId || (messages.length === 0 && !isLoading);
+  const showEmptyState = messages.length === 0 && !isLoading;
 
   return (
     <div className="flex-1 flex flex-col min-w-0">
@@ -87,20 +107,12 @@ export function ChatContainer({
           <ChatMessages
             messages={messages}
             isLoading={isLoading}
-            isNewChatPending={isNewChatPending}
             messagesEndRef={messagesEndRef}
           />
         )}
 
         <div className="p-4">
-          <ChatInput
-            onSendMessage={handleSendMessage}
-            isLoading={isLoading}
-            isNewChatPending={isNewChatPending}
-            generateChatTitle={generateChatTitle}
-            messages={messages}
-            ably={ably}
-          />
+          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
     </div>
