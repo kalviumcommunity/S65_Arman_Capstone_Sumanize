@@ -40,16 +40,11 @@ export function useChatManagement() {
 
       if (res.ok) {
         const remainingChats = chats.filter((chat) => chat.chatId !== chatId);
-
         setChats(remainingChats);
 
         if (activeChatId === chatId) {
-          if (remainingChats.length > 0) {
-            setActiveChatId(remainingChats[0].chatId);
-            setIsNewChatPending(false);
-          } else {
-            prepareNewChat();
-          }
+          // If the deleted chat was active, go to the new chat state
+          prepareNewChat();
         }
       } else {
         console.error("Failed to delete chat:", res.status, res.statusText);
@@ -66,6 +61,7 @@ export function useChatManagement() {
     setIsNewChatPending(false);
   };
 
+  // --- THIS IS THE MODIFIED SECTION ---
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -75,19 +71,18 @@ export function useChatManagement() {
         const data = await res.json();
         setChats(data);
 
-        if (data.length > 0) {
-          setActiveChatId(data[0].chatId);
-          setIsNewChatPending(false);
-        } else {
-          prepareNewChat();
-        }
+        // THE FIX:
+        // Instead of automatically selecting the first chat,
+        // we will ALWAYS prepare a new chat on initial load.
+        // This gives the user a fresh start every time they open the app.
+        prepareNewChat();
       } catch (error) {
         console.error("Failed to load chats:", error);
       }
     };
 
     loadChats();
-  }, [isAuthenticated]);
+  }, [isAuthenticated]); // This effect runs once when the user session is authenticated.
 
   const generateChatTitle = async (chatId, messageContent) => {
     try {

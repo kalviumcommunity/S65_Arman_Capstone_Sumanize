@@ -140,9 +140,16 @@ export async function POST(request) {
     if (chat.messages && Array.isArray(chat.messages)) {
       for (const msg of chat.messages.slice(-18)) {
         if (msg.role && msg.content && typeof msg.content === "string") {
+          let messageContent = msg.content;
+
+          // If this is a user message with pasted content, combine them intelligently
+          if (msg.role === "user" && msg.pastedContent) {
+            messageContent = `Here is the content to analyze:\n\n${msg.pastedContent}\n\n${msg.content}`;
+          }
+
           conversationHistory.push({
             role: msg.role === "user" ? "user" : "model",
-            parts: [{ text: msg.content.substring(0, 8000) }],
+            parts: [{ text: messageContent.substring(0, 8000) }],
           });
         }
       }
@@ -167,10 +174,16 @@ export async function POST(request) {
     let fullResponse = "";
     let chunkCount = 0;
 
+    // Prepare message for AI
+    let aiMessage = message.content;
+    if (message.pastedContent) {
+      aiMessage = `Here is the content to analyze:\n\n${message.pastedContent}\n\n${message.content}`;
+    }
+
     // Stream AI response
     console.log("Starting AI message stream...");
     const result = await chatSession.sendMessageStream(
-      message.content.substring(0, 15000),
+      aiMessage.substring(0, 15000),
     );
 
     for await (const chunk of result.stream) {

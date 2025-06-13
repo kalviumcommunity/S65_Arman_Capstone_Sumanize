@@ -22,7 +22,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${judson.variable} ${ibmPlexSerif.variable} antialiased bg-neutral-800 text-neutral-300`}
+        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${judson.variable} ${ibmPlexSerif.variable} antialiased bg-comet-800 text-comet-100`}
       >
         <Providers>{children}</Providers>
       </body>

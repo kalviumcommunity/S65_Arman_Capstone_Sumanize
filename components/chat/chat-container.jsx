@@ -23,11 +23,17 @@ export function ChatContainer({
 }) {
   const { data: session } = useSession();
 
-  const handleSendMessage = async (messageContent) => {
+  const handleSendMessage = async (messageData) => {
+    const messageContent =
+      typeof messageData === "string" ? messageData : messageData.content;
+    const pastedContent =
+      typeof messageData === "object" ? messageData.pastedContent : null;
+
     const userMessage = {
       id: `user-${Date.now()}`,
       role: "user",
-      content: messageContent,
+      content: messageContent || "",
+      pastedContent: pastedContent,
       timestamp: new Date(),
       completed: true,
     };
@@ -47,7 +53,8 @@ export function ChatContainer({
         setIsNewChatPending(false);
         setMessages([userMessage]);
 
-        generateChatTitle(newChat.chatId, messageContent);
+        const titleSource = messageContent || pastedContent || "New Chat";
+        generateChatTitle(newChat.chatId, titleSource);
       } else {
         setMessages((prev) => [...prev, userMessage]);
       }
@@ -58,6 +65,7 @@ export function ChatContainer({
         body: JSON.stringify({
           role: userMessage.role,
           content: userMessage.content,
+          pastedContent: userMessage.pastedContent,
         }),
       });
 
@@ -81,15 +89,11 @@ export function ChatContainer({
 
   if (!isAuthenticated) {
     return (
-      <div className="flex-1 flex items-center justify-center p-4">
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-semibold text-neutral-300">
-            Welcome to Sumanize
-          </h2>
-          <p className="text-neutral-400">
-            Please sign in to start chatting with the AI assistant.
-          </p>
-        </div>
+      <div className="flex-1 flex items-center justify-center p-2">
+        <EmptyState
+          isNewChatPending={isNewChatPending}
+          onSendMessage={handleSendMessage}
+        />
       </div>
     );
   }
@@ -100,18 +104,25 @@ export function ChatContainer({
     <div className="flex-1 flex flex-col min-w-0">
       <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 
-      <div className="flex-1 flex flex-col min-h-0">
-        {showEmptyState ? (
-          <EmptyState isNewChatPending={isNewChatPending} />
-        ) : (
-          <ChatMessages
-            messages={messages}
-            isLoading={isLoading}
-            messagesEndRef={messagesEndRef}
-          />
-        )}
+      <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col min-h-0">
+        <div className="flex-1 flex flex-col min-h-0">
+          {showEmptyState ? (
+            <EmptyState
+              isNewChatPending={isNewChatPending}
+              onSendMessage={handleSendMessage}
+            />
+          ) : (
+            <ChatMessages
+              messages={messages}
+              isLoading={isLoading}
+              messagesEndRef={messagesEndRef}
+              onSendMessage={handleSendMessage}
+            />
+          )}
+        </div>
 
-        <div className="p-4">
+        <div className="px-0 py-4">
+          {" "}
           <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
         </div>
       </div>
