@@ -1,22 +1,12 @@
-import { Funnel_Sans, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "@/app/globals.css";
 import Providers from "@/components/providers/session-provider";
-
-const funnelSans = Funnel_Sans({
-  variable: "--font-funnel-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
-  subsets: ["latin"],
-});
+import {
+  funnelSans,
+  geistMono,
+  instrumentSerif,
+  judson,
+  ibmPlexSerif,
+} from "@/app/fonts";
 
 export const metadata = {
   title: "Sumanize - Fast Summarization",
@@ -32,7 +22,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} antialiased bg-neutral-950 text-neutral-300`}
+        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${judson.variable} ${ibmPlexSerif.variable} antialiased bg-neutral-800 text-neutral-300`}
       >
         <Providers>{children}</Providers>
       </body>

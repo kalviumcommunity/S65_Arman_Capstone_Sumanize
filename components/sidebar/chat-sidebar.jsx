@@ -58,17 +58,14 @@ export function ChatSidebar({
 
   return (
     <div className="relative flex text-neutral-300">
-      {/* Collapse/Expand Toggle Button - Always visible */}
       <button
         onClick={toggleCollapse}
         className="absolute top-2 left-2 z-20 p-2 bg-neutral-900 cursor-pointer rounded-lg transition-colors group"
         title={isCollapsed ? "Show sidebar" : "Hide sidebar"}
       >
-        {/* Sidebar icon (default) */}
         <span className="block group-hover:hidden">
           <SidebarSimple size={20} />
         </span>
-        {/* Arrow icon (on hover) */}
         <span className="hidden group-hover:block">
           {isCollapsed ? (
             <ArrowLineRight size={20} />
@@ -78,14 +75,12 @@ export function ChatSidebar({
         </span>
       </button>
 
-      {/* Sidebar */}
       <div
         className={`flex-shrink-0 bg-neutral-900/50 transition-all duration-300 ease-in-out overflow-hidden ${
           isCollapsed ? "w-0" : "w-78"
         }`}
       >
         <div className="h-full flex flex-col">
-          {/* Header with New Chat button */}
           <div className="p-2 pt-13">
             <Button
               onClick={onCreateChat}
@@ -95,7 +90,6 @@ export function ChatSidebar({
             </Button>
           </div>
 
-          {/* Search Input */}
           <div className="px-2 pb-2">
             <div className="relative">
               <MagnifyingGlass className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500 w-4 h-4" />
@@ -109,7 +103,6 @@ export function ChatSidebar({
             </div>
           </div>
 
-          {/* Chat List */}
           <div className="flex-1 overflow-y-auto">
             <div className="p-2">
               {filteredChats.length === 0 ? (
@@ -178,7 +171,6 @@ export function ChatSidebar({
             </div>
           </div>
 
-          {/* User Account Navigation */}
           <div className="p-2">
             {session?.user ? (
               <UserAccount user={session.user} />
@@ -216,7 +208,6 @@ export function ChatSidebar({
         </div>
       </div>
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-neutral-800 rounded-lg p-6 max-w-sm mx-4">

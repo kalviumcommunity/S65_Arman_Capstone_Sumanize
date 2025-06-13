@@ -1,4 +1,5 @@
 "use client";
+
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useChatManagement } from "@/hooks/use-chat-management";
@@ -14,11 +15,14 @@ export default function HomePage() {
 
   const {
     chats,
+    setChats,
     activeChatId,
+    setActiveChatId,
     isNewChatPending,
+    setIsNewChatPending,
     isAuthenticated,
     prepareNewChat,
-    createNewChat,
+    createNewChatInBackend,
     deleteChat,
     selectChat,
     generateChatTitle,
@@ -54,12 +58,15 @@ export default function HomePage() {
       <div className="flex-1 flex min-w-0">
         <ChatContainer
           chats={chats}
+          setChats={setChats}
           activeChatId={activeChatId}
+          setActiveChatId={setActiveChatId}
           isNewChatPending={isNewChatPending}
+          setIsNewChatPending={setIsNewChatPending}
           messages={messages}
           setMessages={setMessages}
           messagesEndRef={messagesEndRef}
-          createNewChat={createNewChat}
+          createNewChatInBackend={createNewChatInBackend}
           generateChatTitle={generateChatTitle}
           ably={ably}
           isLoading={isLoading}
