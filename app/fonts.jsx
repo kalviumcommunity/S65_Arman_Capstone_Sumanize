@@ -1,11 +1,4 @@
-// app/fonts.js
-import {
-  Funnel_Sans,
-  Geist_Mono,
-  Instrument_Serif,
-  Judson,
-  IBM_Plex_Serif,
-} from "next/font/google";
+import { Funnel_Sans, Geist_Mono, Quattrocento } from "next/font/google";
 
 export const funnelSans = Funnel_Sans({
   variable: "--font-funnel-sans",
@@ -17,20 +10,8 @@ export const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const instrumentSerif = Instrument_Serif({
-  variable: "--font-instrument-serif",
-  weight: "400",
-  subsets: ["latin"],
-});
-
-export const judson = Judson({
-  variable: "--font-judson",
-  weight: "400",
-  subsets: ["latin"],
-});
-
-export const ibmPlexSerif = IBM_Plex_Serif({
-  variable: "--font-ibm-plex-serif",
-  weight: "400",
+export const quattrocento = Quattrocento({
+  variable: "--font-quattrocento",
+  weight: ["400", "700"],
   subsets: ["latin"],
 });

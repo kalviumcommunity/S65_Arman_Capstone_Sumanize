@@ -37,21 +37,6 @@ export function ChatList({
     (chat) => !chat.isPinned && (!chat.createdAt || !isToday(chat.createdAt)),
   );
 
-  if (filteredChats.length === 0) {
-    return (
-      <div className="text-center text-neutral-500 p-2">
-        {chats.length === 0 ? (
-          <p className="text-sm"></p>
-        ) : (
-          <>
-            <p className="text-sm">No chats found</p>
-            <p className="text-xs mt-1">Try adjusting your search</p>
-          </>
-        )}
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-4">
       {pinnedChats.length > 0 && (

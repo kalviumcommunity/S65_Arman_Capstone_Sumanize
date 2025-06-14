@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
+import mongoose from "mongoose";
 
 export async function GET(request) {
   const session = await auth();
@@ -10,26 +11,51 @@ export async function GET(request) {
   }
 
   await connectDB();
-  const chats = await Chat.find({ userId: session.user.id }).sort({
+
+  // Ensure userId is properly formatted as ObjectId
+  const userId = mongoose.Types.ObjectId.isValid(session.user.id)
+    ? new mongoose.Types.ObjectId(session.user.id)
+    : session.user.id;
+
+  const chats = await Chat.find({ userId: userId }).sort({
     updatedAt: -1,
   });
   return NextResponse.json(chats);
 }
 
 export async function POST(request) {
-  const session = await auth();
-  if (!session) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    await connectDB();
+
+    // Ensure userId is properly formatted as ObjectId
+    const userId = mongoose.Types.ObjectId.isValid(session.user.id)
+      ? new mongoose.Types.ObjectId(session.user.id)
+      : session.user.id;
+
+    console.log("Creating new chat for user:", {
+      userId,
+      userIdType: typeof userId,
+    });
+
+    const newChat = await Chat.create({
+      userId: userId,
+      chatId: Date.now().toString(),
+      title: "New Chat",
+      messages: [],
+    });
+
+    console.log("New chat created:", newChat.chatId);
+    return NextResponse.json(newChat);
+  } catch (error) {
+    console.error("Error creating chat:", error);
+    return NextResponse.json(
+      { error: "Failed to create chat", details: error.message },
+      { status: 500 },
+    );
   }
-
-  await connectDB();
-
-  const newChat = await Chat.create({
-    userId: session.user.id,
-    chatId: Date.now().toString(),
-    title: "New Chat",
-    messages: [],
-  });
-
-  return NextResponse.json(newChat);
 }

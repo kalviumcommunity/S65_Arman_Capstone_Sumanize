@@ -6,7 +6,7 @@ import { SidebarHeader, NewChatButton } from "./sidebar-header";
 import { SearchInput } from "./search-input";
 import { ChatList } from "./chat-list";
 import { AuthButtons } from "./auth-buttons";
-import { DeleteConfirmDialog } from "./delete-confirm-dialog";
+import { DeleteConfirmAlert } from "./delete-confirm-alert";
 import UserAccount from "./user-account";
 
 export function ChatSidebar({
@@ -125,7 +125,7 @@ export function ChatSidebar({
       />
 
       <div
-        className={`flex-shrink-0 bg-comet-900 transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`flex-shrink-0 bg-comet-850 border-none rounded-r-2xl transition-all duration-300 ease-in-out overflow-hidden ${
           isCollapsed ? "w-0" : "w-78"
         }`}
       >
@@ -161,11 +161,16 @@ export function ChatSidebar({
         </div>
       </div>
 
-      <DeleteConfirmDialog
+      <DeleteConfirmAlert
         chatId={showDeleteConfirm}
         isOpen={!!showDeleteConfirm}
         onConfirm={confirmDelete}
         onCancel={cancelDelete}
+        onOpenChange={(open) => {
+          if (!open) {
+            cancelDelete();
+          }
+        }}
       />
     </div>
   );
