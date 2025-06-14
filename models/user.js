@@ -7,19 +7,13 @@ export const UserTier = {
 
 export const RateLimits = {
   [UserTier.FREE]: {
-    messagesPerDay: 50,
-    documentsPerDay: 3,
-    youtubeVideosPerDay: 2,
+    messagesPerDay: 25,
   },
   [UserTier.PREMIUM]: {
-    messagesPerDay: 1000,
-    documentsPerDay: 100,
-    youtubeVideosPerDay: 50,
+    messagesPerDay: 50,
   },
   UNAUTHENTICATED: {
-    messagesPerDay: 4,
-    documentsPerDay: 1,
-    youtubeVideosPerDay: 1,
+    messagesPerDay: 5,
   },
 };
 
@@ -108,23 +102,7 @@ const UserSchema = new mongoose.Schema(
         type: Number,
         default: 0,
       },
-      documentsToday: {
-        type: Number,
-        default: 0,
-      },
-      youtubeVideosToday: {
-        type: Number,
-        default: 0,
-      },
       lastMessageTime: {
-        type: Date,
-        default: null,
-      },
-      lastDocumentTime: {
-        type: Date,
-        default: null,
-      },
-      lastYoutubeTime: {
         type: Date,
         default: null,
       },

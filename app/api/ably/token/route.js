@@ -10,10 +10,8 @@ export async function POST() {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Initialize Ably with the ROOT API key (server-side only)
     const client = new Ably.Rest(process.env.ABLY_API_KEY);
 
-    // Create a token request with user-specific capabilities
     const tokenRequestData = await client.auth.createTokenRequest({
       clientId: session.user.id,
       capability: {
@@ -21,7 +19,7 @@ export async function POST() {
         [`ai-responses:${session.user.id}:*`]: ["subscribe"],
         [`ai-status:${session.user.id}:*`]: ["subscribe"],
       },
-      ttl: 3600000, // 1 hour
+      ttl: 3600000,
     });
 
     return NextResponse.json(tokenRequestData);

@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 
@@ -43,7 +45,6 @@ export function useChatManagement() {
         setChats(remainingChats);
 
         if (activeChatId === chatId) {
-          // If the deleted chat was active, go to the new chat state
           prepareNewChat();
         }
       } else {
@@ -61,7 +62,6 @@ export function useChatManagement() {
     setIsNewChatPending(false);
   };
 
-  // --- THIS IS THE MODIFIED SECTION ---
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -71,10 +71,6 @@ export function useChatManagement() {
         const data = await res.json();
         setChats(data);
 
-        // THE FIX:
-        // Instead of automatically selecting the first chat,
-        // we will ALWAYS prepare a new chat on initial load.
-        // This gives the user a fresh start every time they open the app.
         prepareNewChat();
       } catch (error) {
         console.error("Failed to load chats:", error);
@@ -82,17 +78,30 @@ export function useChatManagement() {
     };
 
     loadChats();
-  }, [isAuthenticated]); // This effect runs once when the user session is authenticated.
+  }, [isAuthenticated]);
 
-  const generateChatTitle = async (chatId, messageContent) => {
+  const generateChatTitle = async (chatId, titleData) => {
     try {
-      console.log(
-        `Generating title for chat ${chatId} with message: "${messageContent}"`,
-      );
+      let messageContent, pastedContent;
+
+      if (typeof titleData === "string") {
+        messageContent = titleData;
+        pastedContent = null;
+      } else if (typeof titleData === "object" && titleData !== null) {
+        messageContent = titleData.messageContent;
+        pastedContent = titleData.pastedContent;
+      } else {
+        messageContent = "New Chat";
+        pastedContent = null;
+      }
+
       const titleRes = await fetch(`/api/chats/${chatId}/title`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: messageContent }),
+        body: JSON.stringify({
+          message: messageContent,
+          pastedContent: pastedContent,
+        }),
       });
 
       if (titleRes.ok) {
@@ -102,7 +111,6 @@ export function useChatManagement() {
             chat.chatId === chatId ? { ...chat, title } : chat,
           ),
         );
-        console.log(`Chat title updated to: "${title}" for chat ${chatId}`);
       } else {
         console.error(
           "Failed to generate title:",

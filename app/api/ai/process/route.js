@@ -4,44 +4,77 @@ import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import Ably from "ably";
+import { processAIResponseWithCitations } from "@/lib/citation-processor";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 const SYSTEM_PROMPT = `
-You are Sumanize, a friendly AI assistant focused on conversation and summaries. You help users with various tasks including:
+You are Sumanize, a friendly AI assistant focused on creating clear, structured summaries and analysis. You help users with various tasks including:
 
 1. **Summarization**: Create concise summaries of long texts, articles, or documents
 2. **Analysis**: Analyze content and provide insights
 3. **Q&A**: Answer questions clearly and helpfully
 4. **General Conversation**: Engage in natural dialogue
 
-Guidelines:
-- Be concise but comprehensive in summaries
-- Use bullet points for clarity when appropriate
+**FORMATTING GUIDELINES:**
+- Always use bullet points for summaries and key information
+- Be concise but comprehensive in your analysis
 - Ask follow-up questions if you need clarification
 - Be helpful and friendly in tone
 - If you don't know something, say so honestly
-- For summaries, capture key points while maintaining readability
+
+**CITATION INSTRUCTIONS FOR PASTED CONTENT:**
+When analyzing pasted documents or content:
+1. Structure your response using bullet points for key insights
+2. Add citation markers [1], [2], [3], etc. immediately after each bullet point to reference the source material
+3. Each bullet point should have ONE citation that points to the relevant section of the source
+4. At the end of your response, include a CITATIONS section with brief quotes from the source
+5. Format like this:
+
+• Key insight about the content [1]
+• Another important point from the analysis [2]
+• Third major finding [3]
+
+CITATIONS:
+[1] "Brief relevant quote from source material"
+[2] "Another supporting quote from the source"
+[3] "Third quote that supports the finding"
+
+This helps users verify your analysis against the original content and understand where each insight comes from.
 
 How can I help you today?
 `;
 
+const CITATION_PROMPT_ADDITION = `
+
+IMPORTANT: Please structure your response using bullet points for key insights, with each bullet point followed by a citation marker [1], [2], etc. After your analysis, include a CITATIONS section with brief quotes from the source material that support each bullet point.`;
+
 export async function POST(request) {
   try {
-    console.log("=== AI Processing API called ===");
-
-    // Debug environment variables (without exposing actual values)
-    console.log("Environment check:", {
-      hasAblyKey: !!process.env.ABLY_API_KEY,
-      hasGoogleAI: !!process.env.GOOGLE_AI_API_KEY,
-      hasGeminiAI: !!process.env.GEMINI_API_KEY,
-      hasMongoUri: !!process.env.MONGODB_URI,
-    });
-
     const session = await auth();
+    const rateLimitResult = await checkRateLimit(request, session);
+
+    if (!rateLimitResult.allowed) {
+      console.log("Rate limit exceeded:", {
+        error: rateLimitResult.error,
+        usage: rateLimitResult.usage,
+        resetTime: rateLimitResult.resetTime,
+      });
+
+      return NextResponse.json(
+        {
+          error: rateLimitResult.error,
+          rateLimited: true,
+          usage: rateLimitResult.usage,
+          resetTime: rateLimitResult.resetTime,
+        },
+        { status: 429 },
+      );
+    }
+
     if (!session?.user?.id) {
       console.log("Authentication failed: No session or user ID");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    console.log("User authenticated:", session.user.id);
 
     const { message, chatId } = await request.json();
 
@@ -55,15 +88,9 @@ export async function POST(request) {
         { status: 400 },
       );
     }
-    console.log("Request data valid:", {
-      chatId,
-      messageLength: message.content?.length,
-    });
 
     await connectDB();
-    console.log("Database connected");
 
-    // Verify chat ownership
     const chat = await Chat.findOne({
       chatId,
       userId: session.user.id,
@@ -73,9 +100,7 @@ export async function POST(request) {
       console.log("Chat not found:", { chatId, userId: session.user.id });
       return NextResponse.json({ error: "Chat not found" }, { status: 404 });
     }
-    console.log("Chat found:", { messagesCount: chat.messages?.length || 0 });
 
-    // Check Ably API key
     if (!process.env.ABLY_API_KEY) {
       console.error("ABLY_API_KEY environment variable is not set");
       return NextResponse.json(
@@ -84,7 +109,6 @@ export async function POST(request) {
       );
     }
 
-    // Initialize Ably for publishing responses
     const ably = new Ably.Rest(process.env.ABLY_API_KEY);
     const aiChannel = ably.channels.get(
       `ai-responses:${session.user.id}:${chatId}`,
@@ -92,17 +116,14 @@ export async function POST(request) {
     const statusChannel = ably.channels.get(
       `ai-status:${session.user.id}:${chatId}`,
     );
-    console.log("Ably initialized");
 
-    // Publish AI processing started status
     await statusChannel.publish("ai-started", {
       type: "processing-started",
       chatId,
+      usage: rateLimitResult.usage,
       timestamp: new Date().toISOString(),
     });
-    console.log("AI started status published");
 
-    // Check Google AI API key - try both possible environment variable names
     const googleAiKey =
       process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
     if (!googleAiKey) {
@@ -115,12 +136,9 @@ export async function POST(request) {
       );
     }
 
-    // Initialize AI model
     const genAI = new GoogleGenerativeAI(googleAiKey);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    console.log("Google AI model initialized");
 
-    // Build conversation history
     const conversationHistory = [
       {
         role: "user",
@@ -130,19 +148,17 @@ export async function POST(request) {
         role: "model",
         parts: [
           {
-            text: "I understand. I will follow these guidelines strictly in all our interactions. How can I help you today?",
+            text: "I understand. I will create structured summaries using bullet points with citations when analyzing pasted content. How can I help you today?",
           },
         ],
       },
     ];
 
-    // Add recent messages from chat history
     if (chat.messages && Array.isArray(chat.messages)) {
       for (const msg of chat.messages.slice(-18)) {
         if (msg.role && msg.content && typeof msg.content === "string") {
           let messageContent = msg.content;
 
-          // If this is a user message with pasted content, combine them intelligently
           if (msg.role === "user" && msg.pastedContent) {
             messageContent = `Here is the content to analyze:\n\n${msg.pastedContent}\n\n${msg.content}`;
           }
@@ -154,11 +170,7 @@ export async function POST(request) {
         }
       }
     }
-    console.log("Conversation history built:", {
-      historyLength: conversationHistory.length,
-    });
 
-    // Start AI chat session
     const chatSession = model.startChat({
       history: conversationHistory,
       generationConfig: {
@@ -169,19 +181,15 @@ export async function POST(request) {
         candidateCount: 1,
       },
     });
-    console.log("Chat session started");
 
     let fullResponse = "";
     let chunkCount = 0;
 
-    // Prepare message for AI
     let aiMessage = message.content;
     if (message.pastedContent) {
-      aiMessage = `Here is the content to analyze:\n\n${message.pastedContent}\n\n${message.content}`;
+      aiMessage = `Here is the content to analyze:\n\n${message.pastedContent}\n\n${message.content}${CITATION_PROMPT_ADDITION}`;
     }
 
-    // Stream AI response
-    console.log("Starting AI message stream...");
     const result = await chatSession.sendMessageStream(
       aiMessage.substring(0, 15000),
     );
@@ -192,7 +200,6 @@ export async function POST(request) {
         fullResponse += chunkText;
         chunkCount++;
 
-        // Publish chunk to Ably
         await aiChannel.publish("ai-chunk", {
           type: "chunk",
           text: chunkText,
@@ -202,34 +209,45 @@ export async function POST(request) {
         });
       }
     }
-    console.log("AI streaming completed:", {
-      chunkCount,
-      responseLength: fullResponse.length,
-    });
 
-    // Publish completion
+    let processedResponse = {
+      content: fullResponse,
+      citations: [],
+      hasCitations: false,
+    };
+    if (message.pastedContent) {
+      processedResponse = processAIResponseWithCitations(
+        fullResponse,
+        message.pastedContent,
+      );
+    }
+
     await aiChannel.publish("ai-complete", {
       type: "complete",
-      content: fullResponse,
+      content: processedResponse.content,
+      citations: processedResponse.citations,
+      hasCitations: processedResponse.hasCitations,
       totalChunks: chunkCount,
+      usage: rateLimitResult.usage,
       chatId,
       timestamp: new Date().toISOString(),
     });
 
-    // Publish AI processing completed status
     await statusChannel.publish("ai-completed", {
       type: "processing-completed",
       chatId,
-      messageLength: fullResponse.length,
+      messageLength: processedResponse.content.length,
+      usage: rateLimitResult.usage,
       timestamp: new Date().toISOString(),
     });
-    console.log("Ably messages published successfully");
 
-    // Save assistant message to database
     const assistantMessage = {
       id: Date.now().toString(),
       role: "assistant",
-      content: fullResponse,
+      content: processedResponse.content,
+      citations: processedResponse.hasCitations
+        ? processedResponse.citations
+        : undefined,
       timestamp: new Date(),
     };
 
@@ -237,13 +255,13 @@ export async function POST(request) {
       { chatId, userId: session.user.id },
       { $push: { messages: assistantMessage } },
     );
-    console.log("Message saved to database");
 
     return NextResponse.json({
       success: true,
       messageId: assistantMessage.id,
       chunkCount,
       responseLength: fullResponse.length,
+      usage: rateLimitResult.usage,
     });
   } catch (error) {
     console.error("=== AI processing error ===");
@@ -251,7 +269,6 @@ export async function POST(request) {
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
 
-    // Try to publish error status if possible
     try {
       if (process.env.ABLY_API_KEY) {
         const ably = new Ably.Rest(process.env.ABLY_API_KEY);

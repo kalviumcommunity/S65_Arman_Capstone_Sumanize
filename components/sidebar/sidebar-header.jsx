@@ -1,3 +1,5 @@
+"use client";
+
 import {
   SidebarSimple,
   ArrowLineRight,
@@ -14,7 +16,7 @@ export function SidebarHeader({
   isNewChatPending,
 }) {
   return (
-    <div className="absolute top-2 left-2 z-20 flex bg-comet-850 rounded-lg p-1">
+    <div className="absolute top-2 left-2 z-20 flex bg-comet-850 rounded-lg">
       <Button
         onClick={onToggleCollapse}
         size="icon"

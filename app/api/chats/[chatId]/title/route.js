@@ -2,14 +2,28 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import connectDB from "@/lib/database";
 import Chat from "@/models/chat";
+import { checkRateLimit } from "@/lib/rate-limiter";
 
 export async function POST(request, { params }) {
   const session = await auth();
+
+  const rateLimitResult = await checkRateLimit(request, session);
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      {
+        error: rateLimitResult.error,
+        rateLimited: true,
+        title: "New Chat",
+      },
+      { status: 429 },
+    );
+  }
+
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { message } = await request.json();
+  const { message, pastedContent } = await request.json();
   if (!message || typeof message !== "string" || message.trim().length === 0) {
     return NextResponse.json({ error: "Message is required" }, { status: 400 });
   }
@@ -17,7 +31,6 @@ export async function POST(request, { params }) {
   try {
     const { GoogleGenerativeAI } = await import("@google/generative-ai");
 
-    // Use consistent environment variable name (try both for compatibility)
     const googleAiKey =
       process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
     if (!googleAiKey) {
@@ -47,9 +60,19 @@ export async function POST(request, { params }) {
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const prompt = `Based on this user message, generate a short, descriptive title (max 50 characters) for a chat conversation. Only return the title, nothing else:
+    let prompt;
+    if (pastedContent && pastedContent.trim().length > 0) {
+      const contentPreview = pastedContent.substring(0, 1000);
+      prompt = `Based on this content and user request, generate a short, descriptive title (max 50 characters) for a chat conversation. Focus on the main topic of the content being analyzed. Only return the title, nothing else:
+
+Content being analyzed: "${contentPreview}${pastedContent.length > 1000 ? "..." : ""}"
+
+User request: "${message.trim()}"`;
+    } else {
+      prompt = `Based on this user message, generate a short, descriptive title (max 50 characters) for a chat conversation. Only return the title, nothing else:
 
 "${message.trim()}"`;
+    }
 
     const result = await model.generateContent(prompt);
     const response = await result.response;
@@ -69,7 +92,7 @@ export async function POST(request, { params }) {
       { title: title },
     );
 
-    return NextResponse.json({ title });
+    return NextResponse.json({ title, usage: rateLimitResult.usage });
   } catch (error) {
     console.error("Error generating title:", error);
     return NextResponse.json(

@@ -1,3 +1,5 @@
+"use client";
+
 import { ChatItem } from "./chat-item";
 import { SectionHeader } from "./section-header";
 

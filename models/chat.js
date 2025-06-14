@@ -1,5 +1,41 @@
 import mongoose from "mongoose";
 
+const CitationSchema = new mongoose.Schema(
+  {
+    id: {
+      type: Number,
+      required: true,
+    },
+    sourceText: {
+      type: String,
+      required: true,
+    },
+    startIndex: {
+      type: Number,
+      required: true,
+    },
+    endIndex: {
+      type: Number,
+      required: true,
+    },
+    isMatched: {
+      type: Boolean,
+      default: false,
+    },
+    matchedText: {
+      type: String,
+      required: false,
+    },
+    confidence: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 1,
+    },
+  },
+  { _id: false },
+);
+
 const MessageSchema = new mongoose.Schema(
   {
     id: {
@@ -17,6 +53,10 @@ const MessageSchema = new mongoose.Schema(
     },
     pastedContent: {
       type: String,
+      required: false,
+    },
+    citations: {
+      type: [CitationSchema],
       required: false,
     },
     timestamp: {

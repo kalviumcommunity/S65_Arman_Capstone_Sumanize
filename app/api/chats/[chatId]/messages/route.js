@@ -12,13 +12,6 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    console.log("Session info:", {
-      hasSession: !!session,
-      hasUser: !!session.user,
-      userId: session.user?.id,
-      userEmail: session.user?.email,
-    });
-
     if (!session.user?.id) {
       console.error("No user ID in session");
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
@@ -26,21 +19,10 @@ export async function POST(request, { params }) {
 
     const { role, content, pastedContent } = await request.json();
 
-    console.log("Request data:", {
-      role,
-      contentLength: content?.length || 0,
-      pastedContentLength: pastedContent?.length || 0,
-      chatId: params.chatId,
-    });
-
-    // Validate that we have a role and content (content is required by MongoDB schema)
     if (!role || !content) {
-      console.error("Validation failed:", {
+      console.error("Validation failed: Missing role or content", {
         role,
-        content: content,
         hasContent: !!content,
-        hasPastedContent: !!pastedContent,
-        contentLength: content?.length || 0,
       });
       return NextResponse.json(
         {
@@ -52,9 +34,7 @@ export async function POST(request, { params }) {
     }
 
     await connectDB();
-    console.log("Database connected, looking for chat...");
 
-    // Ensure userId is properly formatted as ObjectId
     let userId;
     try {
       userId = mongoose.Types.ObjectId.isValid(session.user.id)
@@ -64,12 +44,6 @@ export async function POST(request, { params }) {
       console.error("Invalid user ID format:", session.user.id);
       return NextResponse.json({ error: "Invalid user ID" }, { status: 400 });
     }
-
-    console.log("Looking for chat with:", {
-      chatId: params.chatId,
-      userId,
-      userIdType: typeof userId,
-    });
 
     const chat = await Chat.findOne({
       chatId: params.chatId,
@@ -84,39 +58,24 @@ export async function POST(request, { params }) {
       return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
-    console.log("Chat found, creating message...");
-
     const message = {
       id: Date.now().toString(),
       role,
-      content: content || "", // Provide empty string if no content
+      content: content || "",
       pastedContent: pastedContent || undefined,
       timestamp: new Date(),
     };
 
-    console.log("Message created:", {
-      messageId: message.id,
-      role: message.role,
-      contentLength: message.content?.length || 0,
-      pastedContentLength: message.pastedContent?.length || 0,
-      hasContent: !!message.content,
-      hasPastedContent: !!message.pastedContent,
-    });
-
-    // Check if this might exceed MongoDB document size limit (16MB)
     const estimatedSize = JSON.stringify(message).length;
-    console.log("Estimated message size:", estimatedSize, "bytes");
-
     if (estimatedSize > 15 * 1024 * 1024) {
-      // 15MB warning threshold
-      console.warn("Message size is very large, might hit MongoDB 16MB limit");
+      console.warn(
+        "Message size is very large, might hit MongoDB 16MB limit",
+        { size: estimatedSize },
+      );
     }
 
     chat.messages.push(message);
-    console.log("Message added to chat, saving to database...");
-
     await chat.save();
-    console.log("Message saved successfully");
 
     return NextResponse.json(message);
   } catch (error) {
@@ -125,10 +84,8 @@ export async function POST(request, { params }) {
       name: error.name,
       code: error.code,
       stack: error.stack,
-      details: error,
     });
 
-    // Check for specific MongoDB errors
     if (error.name === "ValidationError") {
       console.error("MongoDB Validation Error:", error.errors);
       return NextResponse.json(

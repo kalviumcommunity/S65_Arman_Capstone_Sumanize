@@ -9,6 +9,7 @@ export function ChatMessages({
   messagesEndRef,
   onSendMessage,
   onPastedContentClick,
+  onCitationClick,
   isInSplitView,
 }) {
   if (messages.length === 0 && !isLoading) {
@@ -32,6 +33,7 @@ export function ChatMessages({
             key={message.id}
             message={message}
             onPastedContentClick={onPastedContentClick}
+            onCitationClick={onCitationClick}
           />
         ))}
         {isLoading && <LoadingIndicator />}

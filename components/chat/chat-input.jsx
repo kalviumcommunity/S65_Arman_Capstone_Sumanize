@@ -154,7 +154,7 @@ export function ChatInput({
                   ? "Add your question or prompt..."
                   : "Type your message here..."
               }
-              className="min-h-[94px] max-h-[200px] bg-transparent border-0 px-3 py-2 text-comet-300 placeholder-comet-100 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+              className="min-h-[72px] max-h-[200px] bg-transparent border-0 px-3 py-2 text-comet-300 placeholder-comet-100 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
               disabled={isLoading}
               rows={2}
             />
