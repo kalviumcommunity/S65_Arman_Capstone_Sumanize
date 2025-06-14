@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { ArrowUp, Clipboard, Minus } from "@phosphor-icons/react";
+import { ArrowLineUp, Clipboard, Minus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -8,6 +8,7 @@ export function ChatInput({
   isLoading,
   width = "w-full",
   className = "",
+  isInSplitView = false,
 }) {
   const [input, setInput] = useState("");
   const [pastedContents, setPastedContents] = useState([]);
@@ -99,37 +100,35 @@ export function ChatInput({
     setPastedContents([]);
   };
 
+  const removePastedContent = (indexToRemove) => {
+    setPastedContents((prev) =>
+      prev.filter((_, index) => index !== indexToRemove),
+    );
+  };
+
   return (
     <div className={`${width} ${className} relative z-50`}>
-      <div className="w-full max-w-[55.5rem] mx-auto flex-1">
+      <div
+        className={`w-full flex-1 ${isInSplitView ? "px-4" : "max-w-[55.5rem] mx-auto"}`}
+      >
         {pastedContents.length > 0 && (
-          <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-comet-900 rounded-2xl border-4 border-comet-850 mx-auto max-w-[55.5rem]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-sm text-comet-400">
-                <Clipboard size={16} weight="bold" />
-                <span>
-                  Pasted content ({pastedContents.length} document
-                  {pastedContents.length > 1 ? "s" : ""})
-                </span>
-              </div>
-              <Button
-                size="sm"
-                onClick={removeAllPastedContent}
-                className="h-auto text-comet-400 bg-comet-900 cursor-pointer hover:bg-comet-700"
-              >
-                <Minus size={16} weight="bold" />
-              </Button>
-            </div>
-            <div
-              className={`space-y-3 ${pastedContents.length > 1 ? "grid grid-cols-2 gap-3 space-y-0" : ""}`}
-            >
+          <div
+            className={`absolute bottom-full left-0 right-0 mb-2 ${isInSplitView ? "mx-4" : "mx-auto max-w-[55.5rem]"}`}
+          >
+            <div className="flex gap-3">
               {pastedContents.map((content, index) => (
                 <div
                   key={index}
-                  className="text-sm text-comet-400 bg-comet-800 p-3 rounded-lg max-h-16 overflow-y-auto"
+                  className="flex-1 relative text-sm text-comet-300 bg-comet-900 border-4 border-comet-850 p-3 rounded-xl text-center"
                 >
-                  {content.substring(0, 180)}
-                  {content.length > 180 && "..."}
+                  <Button
+                    size="sm"
+                    onClick={() => removePastedContent(index)}
+                    className="absolute top-2 right-2 h-6 w-6 p-0 text-comet-100 bg-red-950 hover:bg-red-900 transition-colors duration-200 cursor-pointer rounded-full"
+                  >
+                    <Minus size={12} weight="bold" />
+                  </Button>
+                  Pasted text - {index + 1}
                 </div>
               ))}
             </div>
@@ -138,7 +137,7 @@ export function ChatInput({
 
         <form
           onSubmit={handleSubmit}
-          className="flex items-end gap-3 rounded-xl bg-neutral-900 border-4 border-neutral-800 p-3 shadow-lg"
+          className="flex items-end gap-3 rounded-t-3xl bg-comet-850 border-8 border-b-0 border-comet-750 p-4 shadow-none"
         >
           <div className="flex flex-col flex-1">
             <Textarea
@@ -155,7 +154,7 @@ export function ChatInput({
                   ? "Add your question or prompt..."
                   : "Type your message here..."
               }
-              className="min-h-[56px] max-h-[200px] bg-transparent border-0 px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
+              className="min-h-[94px] max-h-[200px] bg-transparent border-0 px-3 py-2 text-comet-300 placeholder-comet-100 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
               disabled={isLoading}
               rows={2}
             />
@@ -164,9 +163,9 @@ export function ChatInput({
             type="submit"
             disabled={!canSubmit}
             size="sm"
-            className="h-9 w-9 flex-shrink-0 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 hover:scale-105"
+            className="h-9 w-9 flex-shrink-0 rounded-lg bg-comet-600 hover:bg-comet-700 disabled:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 hover:scale-105"
           >
-            <ArrowUp size={16} className="text-white" />
+            <ArrowLineUp size={16} className="text-white" />
           </Button>
         </form>
       </div>

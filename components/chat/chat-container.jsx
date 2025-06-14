@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { ChatHeader } from "./chat-header";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
 import { EmptyState } from "./empty-state";
+import { PastedContentPanel } from "./pasted-content-panel";
 
 export function ChatContainer({
   chats,
@@ -23,6 +25,15 @@ export function ChatContainer({
   isAuthenticated,
 }) {
   const { data: session } = useSession();
+  const [pastedContentView, setPastedContentView] = useState(null);
+
+  const handlePastedContentClick = (content) => {
+    setPastedContentView(content);
+  };
+
+  const handleClosePastedContent = () => {
+    setPastedContentView(null);
+  };
 
   const handleSendMessage = async (messageData) => {
     const messageContent =
@@ -149,11 +160,16 @@ export function ChatContainer({
   const showEmptyState = messages.length === 0 && !isLoading;
 
   return (
-    <div className="flex-1 flex flex-col min-w-0">
-      <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
+    <div className="flex-1 flex min-w-0">
+      {/* Main chat area */}
+      <div
+        className={`flex flex-col min-w-0 transition-all duration-300 ${pastedContentView ? "w-1/2" : "w-full"}`}
+      >
+        <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 
-      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col min-h-0">
-        <div className="flex-1 flex flex-col min-h-0">
+        <div
+          className={`flex-1 flex flex-col min-h-0 ${pastedContentView ? "w-full" : "w-full max-w-5xl mx-auto"}`}
+        >
           {showEmptyState ? (
             <EmptyState
               isNewChatPending={isNewChatPending}
@@ -165,15 +181,28 @@ export function ChatContainer({
               isLoading={isLoading}
               messagesEndRef={messagesEndRef}
               onSendMessage={handleSendMessage}
+              onPastedContentClick={handlePastedContentClick}
+              isInSplitView={!!pastedContentView}
             />
           )}
-        </div>
 
-        <div className="px-0 py-4">
-          {" "}
-          <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+          <div className="px-0 py-0">
+            <ChatInput
+              onSendMessage={handleSendMessage}
+              isLoading={isLoading}
+              isInSplitView={!!pastedContentView}
+            />
+          </div>
         </div>
       </div>
+
+      {/* Pasted content panel */}
+      {pastedContentView && (
+        <PastedContentPanel
+          content={pastedContentView}
+          onClose={handleClosePastedContent}
+        />
+      )}
     </div>
   );
 }
