@@ -12,7 +12,6 @@ export async function GET(request) {
 
   await connectDB();
 
-  // Ensure userId is properly formatted as ObjectId
   const userId = mongoose.Types.ObjectId.isValid(session.user.id)
     ? new mongoose.Types.ObjectId(session.user.id)
     : session.user.id;
@@ -32,15 +31,9 @@ export async function POST(request) {
 
     await connectDB();
 
-    // Ensure userId is properly formatted as ObjectId
     const userId = mongoose.Types.ObjectId.isValid(session.user.id)
       ? new mongoose.Types.ObjectId(session.user.id)
       : session.user.id;
-
-    console.log("Creating new chat for user:", {
-      userId,
-      userIdType: typeof userId,
-    });
 
     const newChat = await Chat.create({
       userId: userId,
@@ -49,7 +42,6 @@ export async function POST(request) {
       messages: [],
     });
 
-    console.log("New chat created:", newChat.chatId);
     return NextResponse.json(newChat);
   } catch (error) {
     console.error("Error creating chat:", error);

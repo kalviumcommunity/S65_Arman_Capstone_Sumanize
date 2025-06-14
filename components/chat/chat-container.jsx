@@ -26,13 +26,44 @@ export function ChatContainer({
 }) {
   const { data: session } = useSession();
   const [pastedContentView, setPastedContentView] = useState(null);
+  const [currentCitations, setCurrentCitations] = useState([]);
+  const [activeCitation, setActiveCitation] = useState(null);
 
-  const handlePastedContentClick = (content) => {
+  const handlePastedContentClick = (content, citations = []) => {
     setPastedContentView(content);
+    setCurrentCitations(citations || []);
+    setActiveCitation(null);
   };
 
   const handleClosePastedContent = () => {
     setPastedContentView(null);
+    setCurrentCitations([]);
+    setActiveCitation(null);
+  };
+
+  const handleCitationClick = (citation, citationId, message) => {
+    console.log("Citation click in container:", {
+      citation,
+      citationId,
+      messageHasPastedContent: !!message.pastedContent,
+      currentPastedContentView: !!pastedContentView,
+      messageCitations: message.citations?.length || 0,
+    });
+
+    // If pasted content panel is not open, open it with the message's pasted content
+    if (!pastedContentView && message.pastedContent) {
+      console.log("Opening pasted content panel with citations");
+      setPastedContentView(message.pastedContent);
+      setCurrentCitations(message.citations || []);
+    } else if (pastedContentView && message.citations) {
+      // Update citations if panel is already open
+      console.log("Updating current citations");
+      setCurrentCitations(message.citations);
+    }
+
+    // Set active citation for highlighting
+    console.log("Setting active citation:", citationId);
+    setActiveCitation(citationId);
   };
 
   const handleSendMessage = async (messageData) => {
@@ -69,8 +100,11 @@ export function ChatContainer({
         console.log("Setting initial message for new chat:", userMessage.id);
         setMessagesWithoutReload([userMessage]);
 
-        const titleSource = messageContent || pastedContent || "New Chat";
-        generateChatTitle(newChat.chatId, titleSource);
+        // Generate title considering both message content and pasted content
+        generateChatTitle(newChat.chatId, {
+          messageContent: messageContent,
+          pastedContent: pastedContent,
+        });
       } else {
         console.log("Adding message to existing chat:", userMessage.id);
         setMessages((prev) => [...prev, userMessage]);
@@ -182,6 +216,7 @@ export function ChatContainer({
               messagesEndRef={messagesEndRef}
               onSendMessage={handleSendMessage}
               onPastedContentClick={handlePastedContentClick}
+              onCitationClick={handleCitationClick}
               isInSplitView={!!pastedContentView}
             />
           )}
@@ -200,6 +235,8 @@ export function ChatContainer({
       {pastedContentView && (
         <PastedContentPanel
           content={pastedContentView}
+          citations={currentCitations}
+          activeCitation={activeCitation}
           onClose={handleClosePastedContent}
         />
       )}

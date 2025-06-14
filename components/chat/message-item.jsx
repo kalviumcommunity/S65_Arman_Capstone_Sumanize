@@ -1,5 +1,6 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
+import { CitationRenderer } from "./citation-renderer";
 
 const MarkdownComponents = {
   h1: ({ node, ...props }) => (
@@ -32,7 +33,11 @@ const MarkdownComponents = {
   p: ({ node, ...props }) => <p className="mb-4" {...props} />,
 };
 
-export function MessageItem({ message, onPastedContentClick }) {
+export function MessageItem({
+  message,
+  onPastedContentClick,
+  onCitationClick,
+}) {
   if (message.role === "user") {
     const TRUNCATE_THRESHOLD = 350;
     const [isExpanded, setIsExpanded] = useState(false);
@@ -52,7 +57,7 @@ export function MessageItem({ message, onPastedContentClick }) {
               <div
                 onClick={() =>
                   onPastedContentClick &&
-                  onPastedContentClick(message.pastedContent)
+                  onPastedContentClick(message.pastedContent, message.citations)
                 }
                 className="text-sm text-comet-300 bg-comet-900 border-4 border-comet-850 p-3 rounded-xl text-center cursor-pointer hover:bg-comet-800 transition-colors duration-200"
               >
@@ -93,12 +98,44 @@ export function MessageItem({ message, onPastedContentClick }) {
     );
   }
 
+  // AI Assistant response
+  const hasCitations =
+    (message.hasCitations &&
+      message.citations &&
+      message.citations.length > 0) ||
+    (message.citations && message.citations.length > 0);
+
+  console.log("MessageItem AI response:", {
+    messageId: message.id,
+    hasCitations,
+    citationsLength: message.citations?.length || 0,
+    hasHasCitationsFlag: message.hasCitations,
+    citations:
+      message.citations?.map((c) => ({ id: c.id, isMatched: c.isMatched })) ||
+      [],
+  });
+
+  const handleCitationClick = (citation, citationId) => {
+    console.log("Citation clicked in MessageItem:", { citation, citationId });
+    if (onCitationClick) {
+      onCitationClick(citation, citationId, message);
+    }
+  };
+
   return (
     <div className="flex items-start gap-4 font-serif text-lg">
       <div className="flex min-w-0 flex-col p-6">
-        <ReactMarkdown components={MarkdownComponents}>
-          {message.content}
-        </ReactMarkdown>
+        {hasCitations ? (
+          <CitationRenderer
+            content={message.content}
+            citations={message.citations}
+            onCitationClick={handleCitationClick}
+          />
+        ) : (
+          <ReactMarkdown components={MarkdownComponents}>
+            {message.content}
+          </ReactMarkdown>
+        )}
       </div>
     </div>
   );

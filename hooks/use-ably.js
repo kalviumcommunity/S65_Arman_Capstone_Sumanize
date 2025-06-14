@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import Ably from "ably";
@@ -24,8 +26,6 @@ export function useAbly(
 
     const initializeAbly = async () => {
       try {
-        console.log("Initializing Ably connection for user:", session.user.id);
-
         const ably = new Ably.Realtime({
           authUrl: "/api/ably/token",
           authMethod: "POST",
@@ -38,7 +38,6 @@ export function useAbly(
 
         ably.connection.on("connected", () => {
           if (mounted) {
-            console.log("Ably connected successfully");
             setIsConnected(true);
             setConnectionError(null);
           }
@@ -46,7 +45,6 @@ export function useAbly(
 
         ably.connection.on("disconnected", () => {
           if (mounted) {
-            console.log("Ably disconnected");
             setIsConnected(false);
           }
         });
@@ -89,8 +87,6 @@ export function useAbly(
       return;
     }
 
-    console.log("Subscribing to channels for chat:", activeChatId);
-
     const ably = ablyRef.current;
     const aiChannel = ably.channels.get(
       `ai-responses:${session.user.id}:${activeChatId}`,
@@ -128,7 +124,7 @@ export function useAbly(
     };
 
     const handleAiComplete = (message) => {
-      const { content, timestamp } = message.data;
+      const { content, citations, hasCitations, timestamp } = message.data;
 
       setMessages((prev) => {
         const newMessages = [...prev];
@@ -136,6 +132,8 @@ export function useAbly(
 
         if (lastMessage && lastMessage.role === "assistant") {
           lastMessage.content = content;
+          lastMessage.citations = hasCitations ? citations : undefined;
+          lastMessage.hasCitations = hasCitations || false;
           lastMessage.completed = true;
           lastMessage.timestamp = new Date(timestamp);
           lastMessage.id = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -145,16 +143,13 @@ export function useAbly(
       });
 
       setIsLoading(false);
-      console.log("AI response completed");
     };
 
     const handleAiStarted = () => {
-      console.log("AI processing started");
       setIsLoading(true);
     };
 
     const handleAiCompleted = () => {
-      console.log("AI processing completed");
       setIsLoading(false);
     };
 
@@ -182,7 +177,6 @@ export function useAbly(
     statusChannel.subscribe("ai-error", handleAiError);
 
     return () => {
-      console.log("Cleaning up channel subscriptions for chat:", activeChatId);
       aiChannel.unsubscribe();
       statusChannel.unsubscribe();
     };
@@ -197,7 +191,6 @@ export function useAbly(
 
   const cleanup = () => {
     if (ablyRef.current) {
-      console.log("Closing Ably connection");
       ablyRef.current.close();
       ablyRef.current = null;
     }
@@ -208,7 +201,6 @@ export function useAbly(
   const sendMessage = async (message, chatId) => {
     try {
       setIsLoading(true);
-      console.log("Sending message to AI processing API");
 
       const response = await fetch("/api/ai/process", {
         method: "POST",
@@ -221,13 +213,44 @@ export function useAbly(
 
       if (!response.ok) {
         const errorData = await response.json();
+
+        if (response.status === 429 && errorData.rateLimited) {
+          // Kept this log as it's an important, non-standard event to monitor
+          console.log("Rate limit exceeded:", errorData);
+
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: `rate-limit-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              role: "assistant",
+              content: `⚠️ **Rate Limit Exceeded**\n\n${errorData.error}\n\n${
+                errorData.usage?.tier === "unauthenticated"
+                  ? "Sign in to get 25 messages per day!"
+                  : errorData.usage?.tier === "free"
+                    ? "Upgrade to Premium for 50 messages per day!"
+                    : "Your usage will reset tomorrow."
+              }`,
+              timestamp: new Date(),
+              completed: true,
+              isRateLimitError: true,
+            },
+          ]);
+
+          setIsLoading(false);
+          return false;
+        }
+
         throw new Error(
           `AI processing failed: ${response.status} - ${errorData.error}`,
         );
       }
 
       const result = await response.json();
-      console.log("Message sent successfully:", result);
+
+      if (typeof window !== "undefined" && window.refreshUsageIndicator) {
+        window.refreshUsageIndicator();
+      }
+
       return true;
     } catch (error) {
       console.error("Failed to send message:", error);

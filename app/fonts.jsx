@@ -1,3 +1,5 @@
+"use client";
+
 import { Funnel_Sans, Geist_Mono, Quattrocento } from "next/font/google";
 
 export const funnelSans = Funnel_Sans({

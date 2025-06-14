@@ -1,3 +1,5 @@
+"use client";
+
 export function SectionHeader({ title, count }) {
   return (
     <div className="px-2 py-1 mb-2">
