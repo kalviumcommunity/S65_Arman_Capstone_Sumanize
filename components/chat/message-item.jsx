@@ -123,7 +123,7 @@ export function MessageItem({
   };
 
   return (
-    <div className="flex items-start gap-4 font-serif text-lg">
+    <div className="flex items-start gap-4 text-md">
       <div className="flex min-w-0 flex-col p-6">
         {hasCitations ? (
           <CitationRenderer

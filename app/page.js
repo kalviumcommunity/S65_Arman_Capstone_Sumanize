@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useChatManagement } from "@/hooks/use-chat-management";
 import { useMessages } from "@/hooks/use-messages";
@@ -8,10 +8,12 @@ import { useAbly } from "@/hooks/use-ably";
 import { ChatSidebar } from "@/components/sidebar/chat-sidebar";
 import { ChatContainer } from "@/components/chat/chat-container";
 import { LoadingScreen } from "@/components/auth/loading-screen";
+import { CommandPalette } from "@/components/command/cmdk";
 
 export default function HomePage() {
   const { status } = useSession();
   const [isLoading, setIsLoading] = useState(false);
+  const [isCommandOpen, setIsCommandOpen] = useState(false);
 
   const {
     chats,
@@ -37,6 +39,29 @@ export default function HomePage() {
     setMessages,
     setIsLoading,
   );
+
+  // Global keyboard shortcut for command palette
+  useEffect(() => {
+    const down = (e) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        setIsCommandOpen((open) => !open);
+      }
+    };
+
+    document.addEventListener("keydown", down);
+    return () => document.removeEventListener("keydown", down);
+  }, []);
+
+  const handleCommandSelect = (chatId) => {
+    if (chatId === null) {
+      // New chat
+      prepareNewChat();
+    } else {
+      // Existing chat
+      selectChat(chatId);
+    }
+  };
 
   if (status === "loading") {
     return <LoadingScreen />;
@@ -73,6 +98,13 @@ export default function HomePage() {
           isAuthenticated={isAuthenticated}
         />
       </div>
+
+      {/* Global Command Palette */}
+      <CommandPalette
+        isOpen={isCommandOpen}
+        onClose={() => setIsCommandOpen(false)}
+        onSelectChat={handleCommandSelect}
+      />
     </div>
   );
 }

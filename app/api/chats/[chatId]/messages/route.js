@@ -68,10 +68,9 @@ export async function POST(request, { params }) {
 
     const estimatedSize = JSON.stringify(message).length;
     if (estimatedSize > 15 * 1024 * 1024) {
-      console.warn(
-        "Message size is very large, might hit MongoDB 16MB limit",
-        { size: estimatedSize },
-      );
+      console.warn("Message size is very large, might hit MongoDB 16MB limit", {
+        size: estimatedSize,
+      });
     }
 
     chat.messages.push(message);

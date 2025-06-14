@@ -7,7 +7,7 @@ import { SearchInput } from "./search-input";
 import { ChatList } from "./chat-list";
 import { AuthButtons } from "./auth-buttons";
 import { DeleteConfirmAlert } from "./delete-confirm-alert";
-import UserAccount from "./user-account";
+import UserAccount from "@/components/auth/user-account";
 
 export function ChatSidebar({
   chats = [],
@@ -121,11 +121,12 @@ export function ChatSidebar({
         isCollapsed={isCollapsed}
         onToggleCollapse={toggleCollapse}
         onCreateChat={onCreateChat}
+        onSelectChat={onSelectChat}
         isNewChatPending={isNewChatPending}
       />
 
       <div
-        className={`flex-shrink-0 bg-comet-850 border-none rounded-r-2xl transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`flex-shrink-0 bg-comet-900 border-none rounded-r-2xl transition-all duration-300 ease-in-out overflow-hidden ${
           isCollapsed ? "w-0" : "w-78"
         }`}
       >
