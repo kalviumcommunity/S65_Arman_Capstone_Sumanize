@@ -28,10 +28,8 @@ export default function HomePage() {
     generateChatTitle,
   } = useChatManagement();
 
-  const { messages, setMessages, messagesEndRef } = useMessages(
-    activeChatId,
-    isNewChatPending,
-  );
+  const { messages, setMessages, setMessagesWithoutReload, messagesEndRef } =
+    useMessages(activeChatId, isNewChatPending);
 
   const ably = useAbly(
     activeChatId,
@@ -65,6 +63,7 @@ export default function HomePage() {
           setIsNewChatPending={setIsNewChatPending}
           messages={messages}
           setMessages={setMessages}
+          setMessagesWithoutReload={setMessagesWithoutReload}
           messagesEndRef={messagesEndRef}
           createNewChatInBackend={createNewChatInBackend}
           generateChatTitle={generateChatTitle}

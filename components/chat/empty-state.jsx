@@ -95,26 +95,26 @@ We project a total investment of \(\$3.5\) million for Project 'Odyssey' over 18
         </div>
         <h2 className="text-6xl font-serif mb-4">Sumanize</h2>
 
-        <div className="text-sm text-comet-550 bg-comet-850 rounded-xl p-6 max-w-md mx-auto mb-4">
+        <div className="text-sm text-comet-550 bg-comet-850 rounded-xl p-4 max-w-md mx-auto mb-4">
           Paste large documents directly for a cleaner conversation or use the
           demo examples below.
         </div>
-        <div className="w-full mx-auto">
+        <div className="max-w-5xl mx-auto px-4">
           <TooltipProvider>
-            <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex gap-3 justify-center">
               {demoSummaries.map((demo) => {
                 return (
                   <Tooltip key={demo.id}>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => handleDemoClick(demo)}
-                        className="h-auto md:flex-1 bg-comet-850 hover:bg-comet-950 rounded-xl flex-col items-start p-6 text-left whitespace-normal cursor-pointer hover:border-comet-900"
+                        className="h-auto flex-1 max-w-72 bg-comet-850 hover:bg-comet-950 rounded-xl flex-col items-start p-4 text-left whitespace-normal cursor-pointer"
                       >
-                        <h3 className="font-medium text-comet-400 flex items-center gap-3">
+                        <h3 className="font-medium text-comet-400 flex items-center gap-2 text-sm">
                           {demo.icon}
                           {demo.title}
                         </h3>
-                        <p className="text-comet-500 font-serif">
+                        <p className="text-comet-500 font-serif text-sm line-clamp-3">
                           {demo.description}
                         </p>
                       </Button>

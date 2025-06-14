@@ -1,12 +1,6 @@
 import "@/app/globals.css";
 import Providers from "@/components/providers/session-provider";
-import {
-  funnelSans,
-  geistMono,
-  instrumentSerif,
-  judson,
-  ibmPlexSerif,
-} from "@/app/fonts";
+import { funnelSans, geistMono, quattrocento } from "@/app/fonts";
 
 export const metadata = {
   title: "Sumanize - Fast Summarization",
@@ -22,7 +16,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
-        className={`${funnelSans.variable} ${geistMono.variable} ${instrumentSerif.variable} ${judson.variable} ${ibmPlexSerif.variable} antialiased bg-comet-800 text-comet-100`}
+        className={`${funnelSans.variable} ${geistMono.variable} ${quattrocento.variable} antialiased bg-comet-800 text-comet-100`}
       >
         <Providers>{children}</Providers>
       </body>

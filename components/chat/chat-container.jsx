@@ -13,6 +13,7 @@ export function ChatContainer({
   setIsNewChatPending,
   messages,
   setMessages,
+  setMessagesWithoutReload,
   messagesEndRef,
   createNewChatInBackend,
   generateChatTitle,
@@ -39,6 +40,7 @@ export function ChatContainer({
     };
 
     let currentChatId = activeChatId;
+    let messageSavedToDatabase = false;
 
     try {
       if (isNewChatPending) {
@@ -51,13 +53,25 @@ export function ChatContainer({
         setChats((prev) => [newChat, ...prev]);
         setActiveChatId(newChat.chatId);
         setIsNewChatPending(false);
-        setMessages([userMessage]);
+
+        // Use setMessagesWithoutReload to prevent useMessages from overwriting this
+        console.log("Setting initial message for new chat:", userMessage.id);
+        setMessagesWithoutReload([userMessage]);
 
         const titleSource = messageContent || pastedContent || "New Chat";
         generateChatTitle(newChat.chatId, titleSource);
       } else {
+        console.log("Adding message to existing chat:", userMessage.id);
         setMessages((prev) => [...prev, userMessage]);
       }
+
+      console.log("About to save message:", {
+        chatId: currentChatId,
+        role: userMessage.role,
+        content: userMessage.content?.substring(0, 100) + "...",
+        pastedContentLength: userMessage.pastedContent?.length || 0,
+        hasPastedContent: !!userMessage.pastedContent,
+      });
 
       const saveResponse = await fetch(`/api/chats/${currentChatId}/messages`, {
         method: "POST",
@@ -70,16 +84,50 @@ export function ChatContainer({
       });
 
       if (!saveResponse.ok) {
-        throw new Error("Failed to save message to the database.");
+        const errorData = await saveResponse.json();
+        console.error("Save response error:", errorData);
+
+        // Handle validation errors more gracefully
+        let errorMessage = errorData.error || "Unknown error";
+        if (errorData.details) {
+          if (Array.isArray(errorData.details)) {
+            errorMessage +=
+              " - " + errorData.details.map((d) => d.message || d).join(", ");
+          } else {
+            errorMessage += " - " + errorData.details;
+          }
+        }
+
+        throw new Error(`Failed to save message: ${errorMessage}`);
       }
+
+      messageSavedToDatabase = true;
+      console.log("Message saved successfully to database");
 
       const success = await ably.sendMessage(userMessage, currentChatId);
       if (!success) {
-        throw new Error("Failed to send message to the AI for processing.");
+        console.error(
+          "Failed to send message to AI, but message was saved to database",
+        );
+        setIsLoading(false);
+        // Don't remove the message since it was saved to database
+        return;
       }
     } catch (error) {
       console.error("An error occurred during message sending:", error);
-      setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
+
+      // Only remove the message from UI if it failed to save to database
+      if (!messageSavedToDatabase) {
+        console.log(
+          "Removing message from UI since it failed to save to database",
+        );
+        setMessages((prev) => prev.filter((msg) => msg.id !== userMessage.id));
+      } else {
+        console.log(
+          "Keeping message in UI since it was saved to database successfully",
+        );
+      }
+
       setIsLoading(false);
     }
   };
@@ -104,7 +152,7 @@ export function ChatContainer({
     <div className="flex-1 flex flex-col min-w-0">
       <ChatHeader title={chatTitle} isNewChatPending={isNewChatPending} />
 
-      <div className="w-full max-w-4xl mx-auto flex-1 flex flex-col min-h-0">
+      <div className="w-full max-w-5xl mx-auto flex-1 flex flex-col min-h-0">
         <div className="flex-1 flex flex-col min-h-0">
           {showEmptyState ? (
             <EmptyState

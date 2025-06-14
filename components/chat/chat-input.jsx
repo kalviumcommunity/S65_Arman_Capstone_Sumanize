@@ -1,29 +1,44 @@
 import { useState, useRef } from "react";
-import { ArrowUp, Paperclip } from "@phosphor-icons/react";
+import { ArrowUp, Clipboard, Minus } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
-export function ChatInput({ onSendMessage, isLoading }) {
+export function ChatInput({
+  onSendMessage,
+  isLoading,
+  width = "w-full",
+  className = "",
+}) {
   const [input, setInput] = useState("");
-  const [pastedContent, setPastedContent] = useState(null);
+  const [pastedContents, setPastedContents] = useState([]);
   const textareaRef = useRef(null);
 
   const PASTE_THRESHOLD = 500;
 
-  const canSubmit = (input.trim().length > 0 || pastedContent) && !isLoading;
+  const canSubmit =
+    (input.trim().length > 0 || pastedContents.length > 0) && !isLoading;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     const messageContent = textareaRef.current?.value.trim();
 
-    if (!messageContent && !pastedContent) return;
+    if (!messageContent && pastedContents.length === 0) return;
+
+    // Ensure content is never empty for MongoDB validation
+    const finalContent =
+      messageContent ||
+      (pastedContents.length > 0 ? "Please analyze the provided content." : "");
 
     const messageData = {
-      content: messageContent,
-      pastedContent: pastedContent,
+      content: finalContent,
+      pastedContent:
+        pastedContents.length > 0
+          ? pastedContents.join("\n\n--- Document Separator ---\n\n")
+          : null,
     };
 
     setInput("");
-    setPastedContent(null);
+    setPastedContents([]);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -44,6 +59,11 @@ export function ChatInput({ onSendMessage, isLoading }) {
     if (pastedText.length > PASTE_THRESHOLD) {
       e.preventDefault();
 
+      // Limit to 2 pasted documents
+      if (pastedContents.length >= 2) {
+        return; // Don't paste more than 2 documents
+      }
+
       const lines = pastedText.split("\n");
       const lastLine = lines[lines.length - 1].trim();
 
@@ -58,13 +78,13 @@ export function ChatInput({ onSendMessage, isLoading }) {
       ) {
         const contentWithoutPrompt = lines.slice(0, -1).join("\n").trim();
         if (contentWithoutPrompt.length > PASTE_THRESHOLD) {
-          setPastedContent(contentWithoutPrompt);
+          setPastedContents((prev) => [...prev, contentWithoutPrompt]);
           setInput(lastLine);
           return;
         }
       }
 
-      setPastedContent(pastedText);
+      setPastedContents((prev) => [...prev, pastedText]);
       setInput("");
     }
   };
@@ -75,37 +95,44 @@ export function ChatInput({ onSendMessage, isLoading }) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   };
 
-  const removePastedContent = () => {
-    setPastedContent(null);
+  const removeAllPastedContent = () => {
+    setPastedContents([]);
   };
 
   return (
-    <div className="w-full">
-      <div className="w-full">
-        {pastedContent && (
-          <div className="mb-3 p-3 bg-neutral-800/50 rounded-lg border border-neutral-700">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2 text-sm text-neutral-400">
-                <Paperclip size={16} />
-                <span>Pasted content ({pastedContent.length} characters)</span>
+    <div className={`${width} ${className} relative z-50`}>
+      <div className="w-full max-w-[55.5rem] mx-auto flex-1">
+        {pastedContents.length > 0 && (
+          <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-comet-900 rounded-2xl border-4 border-comet-850 mx-auto max-w-[55.5rem]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-sm text-comet-400">
+                <Clipboard size={16} weight="bold" />
+                <span>
+                  Pasted content ({pastedContents.length} document
+                  {pastedContents.length > 1 ? "s" : ""})
+                </span>
               </div>
-              <button
-                onClick={removePastedContent}
-                className="text-neutral-400 hover:text-neutral-200 text-sm"
+              <Button
+                size="sm"
+                onClick={removeAllPastedContent}
+                className="h-auto text-comet-400 bg-comet-900 cursor-pointer hover:bg-comet-700"
               >
-                Remove
-              </button>
+                <Minus size={16} weight="bold" />
+              </Button>
             </div>
-            <div className="text-sm text-neutral-300 bg-neutral-900/50 p-2 rounded max-h-20 overflow-y-auto">
-              {pastedContent.substring(0, 200)}
-              {pastedContent.length > 200 && "..."}
+            <div
+              className={`space-y-3 ${pastedContents.length > 1 ? "grid grid-cols-2 gap-3 space-y-0" : ""}`}
+            >
+              {pastedContents.map((content, index) => (
+                <div
+                  key={index}
+                  className="text-sm text-comet-400 bg-comet-800 p-3 rounded-lg max-h-16 overflow-y-auto"
+                >
+                  {content.substring(0, 180)}
+                  {content.length > 180 && "..."}
+                </div>
+              ))}
             </div>
-            {!input.trim() && (
-              <div className="mt-2 text-xs text-neutral-500 bg-neutral-900/30 p-2 rounded">
-                Add a question or instruction about this content in the message
-                box below
-              </div>
-            )}
           </div>
         )}
 
@@ -114,7 +141,7 @@ export function ChatInput({ onSendMessage, isLoading }) {
           className="flex items-end gap-3 rounded-xl bg-neutral-900 border-4 border-neutral-800 p-3 shadow-lg"
         >
           <div className="flex flex-col flex-1">
-            <textarea
+            <Textarea
               ref={textareaRef}
               value={input}
               onChange={(e) => {
@@ -124,11 +151,11 @@ export function ChatInput({ onSendMessage, isLoading }) {
               onKeyDown={handleKeyPress}
               onPaste={handlePaste}
               placeholder={
-                pastedContent
+                pastedContents.length > 0
                   ? "Add your question or prompt..."
                   : "Type your message here..."
               }
-              className="w-full min-h-[56px] max-h-[200px] bg-transparent px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus:outline-none text-sm"
+              className="min-h-[56px] max-h-[200px] bg-transparent border-0 px-3 py-2 text-neutral-100 placeholder-neutral-500 resize-none focus-visible:ring-0 focus-visible:ring-offset-0 text-sm"
               disabled={isLoading}
               rows={2}
             />
@@ -136,6 +163,7 @@ export function ChatInput({ onSendMessage, isLoading }) {
           <Button
             type="submit"
             disabled={!canSubmit}
+            size="sm"
             className="h-9 w-9 flex-shrink-0 rounded-md bg-blue-600 hover:bg-blue-700 disabled:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-all duration-200 hover:scale-105"
           >
             <ArrowUp size={16} className="text-white" />
