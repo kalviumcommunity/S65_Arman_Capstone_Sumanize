@@ -1,18 +1,18 @@
-name: Vercel Deployment
+name: Vercel Production Deployment
 on:
   push:
     branches:
       - main
 
 jobs:
-  deploy:
-    name: Build & Deploy
+  deploy_to_vercel:
+    name: Build & Deploy to Vercel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Vercel Deployment
+      - name: Deploy to Vercel
         uses: amondnet/vercel-action@v25
         with:
           vercel-token: ${{ secrets.VERCEL_TOKEN }}
