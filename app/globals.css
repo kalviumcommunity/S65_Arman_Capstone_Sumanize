@@ -288,6 +288,64 @@ pre {
     background-color: var(--comet-950);
   }
 
+  .hover\:bg-comet-50:hover {
+    background-color: var(--comet-50);
+  }
+  .hover\:bg-comet-100:hover {
+    background-color: var(--comet-100);
+  }
+  .hover\:bg-comet-150:hover {
+    background-color: var(--comet-150);
+  }
+  .hover\:bg-comet-200:hover {
+    background-color: var(--comet-200);
+  }
+  .hover\:bg-comet-250:hover {
+    background-color: var(--comet-250);
+  }
+  .hover\:bg-comet-300:hover {
+    background-color: var(--comet-300);
+  }
+  .hover\:bg-comet-350:hover {
+    background-color: var(--comet-350);
+  }
+  .hover\:bg-comet-400:hover {
+    background-color: var(--comet-400);
+  }
+  .hover\:bg-comet-450:hover {
+    background-color: var(--comet-450);
+  }
+  .hover\:bg-comet-500:hover {
+    background-color: var(--comet-500);
+  }
+  .hover\:bg-comet-550:hover {
+    background-color: var(--comet-550);
+  }
+  .hover\:bg-comet-600:hover {
+    background-color: var(--comet-600);
+  }
+  .hover\:bg-comet-650:hover {
+    background-color: var(--comet-650);
+  }
+  .hover\:bg-comet-700:hover {
+    background-color: var(--comet-700);
+  }
+  .hover\:bg-comet-750:hover {
+    background-color: var(--comet-750);
+  }
+  .hover\:bg-comet-800:hover {
+    background-color: var(--comet-800);
+  }
+  .hover\:bg-comet-850:hover {
+    background-color: var(--comet-850);
+  }
+  .hover\:bg-comet-900:hover {
+    background-color: var(--comet-900);
+  }
+  .hover\:bg-comet-950:hover {
+    background-color: var(--comet-950);
+  }
+
   .text-comet-50 {
     color: var(--comet-50);
   }

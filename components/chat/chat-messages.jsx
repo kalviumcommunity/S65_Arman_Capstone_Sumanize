@@ -11,6 +11,10 @@ export function ChatMessages({
   onPastedContentClick,
   onCitationClick,
   isInSplitView,
+  onRegenerate,
+  isRegenerating,
+  isPastedContentOpen = false,
+  currentPastedContent = null,
 }) {
   if (messages.length === 0 && !isLoading) {
     return (
@@ -34,6 +38,10 @@ export function ChatMessages({
             message={message}
             onPastedContentClick={onPastedContentClick}
             onCitationClick={onCitationClick}
+            onRegenerate={onRegenerate}
+            isRegenerating={isRegenerating && isRegenerating === message.id}
+            isPastedContentOpen={isPastedContentOpen}
+            currentPastedContent={currentPastedContent}
           />
         ))}
         {isLoading && <LoadingIndicator />}

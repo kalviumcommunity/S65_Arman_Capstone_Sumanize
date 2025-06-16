@@ -146,7 +146,7 @@ This strategic plan provides a roadmap for Aperture Innovations to successfully 
     <div className="flex items-center justify-center h-full p-4">
       <div className="text-center w-full">
         <div className="flex justify-center">
-          <CursorClick size={48} />
+          <CursorClick size={48} weight="bold" />
         </div>
         <h2 className="text-6xl font-serif mb-4">Sumanize</h2>
 
@@ -163,7 +163,7 @@ This strategic plan provides a roadmap for Aperture Innovations to successfully 
                     <TooltipTrigger asChild>
                       <Button
                         onClick={() => handleDemoClick(demo)}
-                        className="h-auto flex-1 max-w-72 bg-comet-850 hover:bg-comet-950 rounded-xl flex-col items-start p-4 text-left whitespace-normal cursor-pointer"
+                        className="h-auto flex-1 max-w-72 bg-comet-850 hover:bg-comet-900 transition-colors duration-300 rounded-xl flex-col items-start p-4 text-left whitespace-normal cursor-pointer"
                       >
                         <h3 className="font-medium text-comet-400 flex items-center gap-2 text-sm">
                           {demo.icon}
@@ -179,7 +179,7 @@ This strategic plan provides a roadmap for Aperture Innovations to successfully 
                       align="center"
                       className="max-w-xs text-sm text-comet-100"
                     >
-                      Click to summarize this topic
+                      Click to summarize
                     </TooltipContent>
                   </Tooltip>
                 );

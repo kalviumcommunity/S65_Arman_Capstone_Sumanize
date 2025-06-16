@@ -10,25 +10,27 @@ import { checkRateLimit } from "@/lib/rate-limiter";
 const SYSTEM_PROMPT = `
 You are Sumanize, a friendly AI assistant focused on creating clear, structured summaries and analysis. You help users with various tasks including:
 
-1. **Summarization**: Create concise summaries of long texts, articles, or documents
-2. **Analysis**: Analyze content and provide insights
-3. **Q&A**: Answer questions clearly and helpfully
-4. **General Conversation**: Engage in natural dialogue
+1.  **Summarization**: Create concise summaries of long texts, articles, or documents.
+2.  **Analysis**: Analyze content and provide insights.
+3.  **Code Explanation**: Take code snippets or files and explain their purpose, logic, and functionality in a clear, step-by-step manner.
+4.  **Q&A**: Answer questions clearly and helpfully.
 
 **FORMATTING GUIDELINES:**
-- Always use bullet points for summaries and key information
-- Be concise but comprehensive in your analysis
-- Ask follow-up questions if you need clarification
-- Be helpful and friendly in tone
-- If you don't know something, say so honestly
+- Always use bullet points for summaries, key information, and code explanations.
+- Be concise but comprehensive in your analysis.
+- For code, break down the explanation by functions, classes, or logical blocks.
+- **Citations are not required for code explanations.**
+- Ask follow-up questions if you need clarification.
+- Be helpful and friendly in tone.
+- If you don't know something, say so honestly.
 
-**CITATION INSTRUCTIONS FOR PASTED CONTENT:**
-When analyzing pasted documents or content:
-1. Structure your response using bullet points for key insights
-2. Add citation markers [1], [2], [3], etc. immediately after each bullet point to reference the source material
-3. Each bullet point should have ONE citation that points to the relevant section of the source
-4. At the end of your response, include a CITATIONS section with brief quotes from the source
-5. Format like this:
+**CITATION INSTRUCTIONS FOR PASTED TEXTUAL CONTENT:**
+When analyzing pasted documents or articles:
+1.  Structure your response using bullet points for key insights or explanations.
+2.  Add citation markers [1], [2], [3], etc. immediately after each bullet point to reference the source material.
+3.  Each bullet point should have ONE citation that points to the relevant section of the source.
+4.  At the end of your response, include a CITATIONS section with brief quotes from the source.
+5.  Format like this:
 
 • Key insight about the content [1]
 • Another important point from the analysis [2]
@@ -40,13 +42,13 @@ CITATIONS:
 [3] "Third quote that supports the finding"
 
 This helps users verify your analysis against the original content and understand where each insight comes from.
-
-How can I help you today?
 `;
 
 const CITATION_PROMPT_ADDITION = `
 
-IMPORTANT: Please structure your response using bullet points for key insights, with each bullet point followed by a citation marker [1], [2], etc. After your analysis, include a CITATIONS section with brief quotes from the source material that support each bullet point.`;
+IMPORTANT: When analyzing text, please structure your response using bullet points for key insights, with each bullet point followed by a citation marker [1], [2], etc. After your analysis, include a CITATIONS section with brief quotes from the source material that support each bullet point.
+
+**This citation requirement does not apply to code explanations.**`;
 
 export async function POST(request) {
   try {
@@ -222,11 +224,23 @@ export async function POST(request) {
       );
     }
 
+    // Create the assistant message with unique ID
+    const assistantMessage = {
+      id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      role: "assistant",
+      content: fullResponse,
+      citations: processedResponse.hasCitations
+        ? processedResponse.citations
+        : undefined,
+      timestamp: new Date(),
+    };
+
     await aiChannel.publish("ai-complete", {
       type: "complete",
-      content: processedResponse.content,
+      content: fullResponse,
       citations: processedResponse.citations,
       hasCitations: processedResponse.hasCitations,
+      messageId: assistantMessage.id,
       totalChunks: chunkCount,
       usage: rateLimitResult.usage,
       chatId,
@@ -240,16 +254,6 @@ export async function POST(request) {
       usage: rateLimitResult.usage,
       timestamp: new Date().toISOString(),
     });
-
-    const assistantMessage = {
-      id: Date.now().toString(),
-      role: "assistant",
-      content: processedResponse.content,
-      citations: processedResponse.hasCitations
-        ? processedResponse.citations
-        : undefined,
-      timestamp: new Date(),
-    };
 
     await Chat.updateOne(
       { chatId, userId: session.user.id },
@@ -269,6 +273,26 @@ export async function POST(request) {
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
 
+    // Handle specific error types
+    let errorMessage = "Internal server error";
+    let statusCode = 500;
+
+    if (
+      error.message?.includes("fetch failed") ||
+      error.code === "ECONNREFUSED"
+    ) {
+      errorMessage = "Connection error - this is common in development mode";
+      console.log(
+        "Detected fetch failed / connection error, likely undici issue",
+      );
+    } else if (error.message?.includes("GoogleGenerativeAI")) {
+      errorMessage = "AI service temporarily unavailable";
+      console.log("Google AI API error detected");
+    } else if (error.name === "AbortError") {
+      errorMessage = "Request timeout";
+      console.log("Request was aborted/timed out");
+    }
+
     try {
       if (process.env.ABLY_API_KEY) {
         const ably = new Ably.Rest(process.env.ABLY_API_KEY);
@@ -277,7 +301,7 @@ export async function POST(request) {
         );
         await statusChannel.publish("ai-error", {
           type: "processing-error",
-          error: error.message,
+          error: errorMessage,
           chatId,
           timestamp: new Date().toISOString(),
         });
@@ -288,11 +312,11 @@ export async function POST(request) {
 
     return NextResponse.json(
       {
-        error: "Internal server error",
+        error: errorMessage,
         details:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
-      { status: 500 },
+      { status: statusCode },
     );
   }
 }
