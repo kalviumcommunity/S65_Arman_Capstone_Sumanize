@@ -124,19 +124,23 @@ export function useAbly(
     };
 
     const handleAiComplete = (message) => {
-      const { content, citations, hasCitations, timestamp } = message.data;
+      const { content, citations, hasCitations, messageId, timestamp } =
+        message.data;
 
       setMessages((prev) => {
         const newMessages = [...prev];
         const lastMessage = newMessages[newMessages.length - 1];
 
         if (lastMessage && lastMessage.role === "assistant") {
+          // Use the full content from server (now contains the complete response)
           lastMessage.content = content;
           lastMessage.citations = hasCitations ? citations : undefined;
           lastMessage.hasCitations = hasCitations || false;
           lastMessage.completed = true;
           lastMessage.timestamp = new Date(timestamp);
-          lastMessage.id = `assistant-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          if (messageId) {
+            lastMessage.id = messageId;
+          }
         }
 
         return newMessages;
@@ -198,7 +202,9 @@ export function useAbly(
     setConnectionError(null);
   };
 
-  const sendMessage = async (message, chatId) => {
+  const sendMessage = async (message, chatId, retryCount = 0) => {
+    const maxRetries = 3;
+
     try {
       setIsLoading(true);
 
@@ -225,10 +231,10 @@ export function useAbly(
               role: "assistant",
               content: `⚠️ **Rate Limit Exceeded**\n\n${errorData.error}\n\n${
                 errorData.usage?.tier === "unauthenticated"
-                  ? "Sign in to get 25 messages per day!"
+                  ? "Sign in to get 25 messages every 12 hours!"
                   : errorData.usage?.tier === "free"
-                    ? "Upgrade to Premium for 50 messages per day!"
-                    : "Your usage will reset tomorrow."
+                    ? "Upgrade to Premium for 50 messages every 12 hours!"
+                    : "Your usage will reset in a few hours."
               }`,
               timestamp: new Date(),
               completed: true,
@@ -241,7 +247,7 @@ export function useAbly(
         }
 
         throw new Error(
-          `AI processing failed: ${response.status} - ${errorData.error}`,
+          `AI processing failed: ${response.status} - ${errorData.error || "Unknown error"}`,
         );
       }
 
@@ -254,7 +260,36 @@ export function useAbly(
       return true;
     } catch (error) {
       console.error("Failed to send message:", error);
+
+      // Check if this is a fetch failed error and we haven't exceeded retry limit
+      if (error.message.includes("fetch failed") && retryCount < maxRetries) {
+        console.log(
+          `Retrying request (attempt ${retryCount + 1}/${maxRetries})...`,
+        );
+        // Wait a bit before retrying
+        await new Promise((resolve) =>
+          setTimeout(resolve, 1000 * (retryCount + 1)),
+        );
+        return sendMessage(message, chatId, retryCount + 1);
+      }
+
       setIsLoading(false);
+
+      // Show user-friendly error message
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `error-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          role: "assistant",
+          content: error.message.includes("fetch failed")
+            ? "⚠️ **Connection Error**\n\nThere was a temporary connection issue. This is common in development mode. Please try sending your message again."
+            : `⚠️ **Error**\n\n${error.message}\n\nPlease try again.`,
+          timestamp: new Date(),
+          completed: true,
+          isError: true,
+        },
+      ]);
+
       return false;
     }
   };

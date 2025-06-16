@@ -15,6 +15,11 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isCommandOpen, setIsCommandOpen] = useState(false);
 
+  // Pasted content state lifted up to be shared between sidebar and chat container
+  const [pastedContentView, setPastedContentView] = useState(null);
+  const [currentCitations, setCurrentCitations] = useState([]);
+  const [activeCitation, setActiveCitation] = useState(null);
+
   const {
     chats,
     setChats,
@@ -63,6 +68,52 @@ export default function HomePage() {
     }
   };
 
+  // Pasted content handlers
+  const handlePastedContentClick = (content, citations = []) => {
+    if (content === null) {
+      // Close the pasted content panel
+      setPastedContentView(null);
+      setCurrentCitations([]);
+      setActiveCitation(null);
+    } else {
+      // Open the pasted content panel with new content
+      setPastedContentView(content);
+      setCurrentCitations(citations || []);
+      setActiveCitation(null);
+    }
+  };
+
+  const handleClosePastedContent = () => {
+    setPastedContentView(null);
+    setCurrentCitations([]);
+    setActiveCitation(null);
+  };
+
+  const handleCitationClick = (citation, citationId, message) => {
+    console.log("Citation click in homepage:", {
+      citation,
+      citationId,
+      messageHasPastedContent: !!message.pastedContent,
+      currentPastedContentView: !!pastedContentView,
+      messageCitations: message.citations?.length || 0,
+    });
+
+    // If pasted content panel is not open, open it with the message's pasted content
+    if (!pastedContentView && message.pastedContent) {
+      console.log("Opening pasted content panel with citations");
+      setPastedContentView(message.pastedContent);
+      setCurrentCitations(message.citations || []);
+    } else if (pastedContentView && message.citations) {
+      // Update citations if panel is already open
+      console.log("Updating current citations");
+      setCurrentCitations(message.citations);
+    }
+
+    // Set active citation for highlighting
+    console.log("Setting active citation:", citationId);
+    setActiveCitation(citationId);
+  };
+
   if (status === "loading") {
     return <LoadingScreen />;
   }
@@ -76,6 +127,8 @@ export default function HomePage() {
         onSelectChat={selectChat}
         onDeleteChat={deleteChat}
         isNewChatPending={isNewChatPending}
+        isPastedContentOpen={!!pastedContentView}
+        onClosePastedContent={handleClosePastedContent}
       />
 
       <div className="flex-1 flex min-w-0">
@@ -96,6 +149,12 @@ export default function HomePage() {
           isLoading={isLoading}
           setIsLoading={setIsLoading}
           isAuthenticated={isAuthenticated}
+          pastedContentView={pastedContentView}
+          currentCitations={currentCitations}
+          activeCitation={activeCitation}
+          onPastedContentClick={handlePastedContentClick}
+          onClosePastedContent={handleClosePastedContent}
+          onCitationClick={handleCitationClick}
         />
       </div>
 

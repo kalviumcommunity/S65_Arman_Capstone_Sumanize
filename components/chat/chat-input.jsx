@@ -165,19 +165,19 @@ export function ChatInput({
           <div
             className={`absolute bottom-full left-0 right-0 mb-2 ${isInSplitView ? "mx-4" : "mx-auto max-w-[55.5rem]"}`}
           >
-            <div className="flex gap-3">
+            <div className="flex gap-3 justify-end">
               {pastedContents.map((content, index) => (
                 <div
                   key={index}
-                  className="flex-1 relative text-sm text-comet-300 bg-comet-900 border-4 border-comet-850 p-3 rounded-xl text-center"
+                  className="w-1/2 relative text-sm text-comet-300 bg-comet-900 border-4 border-comet-850 p-3 rounded-xl text-center"
                 >
-                  <Button
+                  {/* <Button
                     size="sm"
                     onClick={() => removePastedContent(index)}
                     className="absolute top-2 right-2 h-6 w-6 p-0 text-red-400 bg-red-950 hover:bg-red-900 transition-colors duration-200 cursor-pointer rounded-full"
                   >
                     <Minus size={12} weight="bold" />
-                  </Button>
+                  </Button> */}
                   Pasted text - {index + 1}
                 </div>
               ))}
@@ -212,25 +212,22 @@ export function ChatInput({
               />
             </div>
 
-            {/* Upload Button */}
-            <Button
-              type="button"
+            {/* <Button
               onClick={handleUpload}
               size="sm"
-              className="h-9 px-3 flex items-center gap-2 rounded-md bg-transparent hover:bg-comet-800 text-comet-400 hover:text-comet-300 transition-colors duration-200"
+              className="h-9 px-3 flex items-center gap-2 rounded-lg bg-comet-850 hover:bg-comet-800 text-comet-400 hover:text-comet-300 transition-colors duration-300 cursor-pointer"
             >
               <Plus size={16} weight="bold" />
-              <span className="text-sm font-medium">Upload</span>
-            </Button>
+              <span className="text-sm">Attach</span>
+            </Button> */}
 
             {/* Settings Dropdown with Badge */}
-            <div className="relative flex items-center">
+            {/* <div className="relative flex items-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button
-                    type="button"
                     size="sm"
-                    className="h-9 px-3 flex items-center gap-2 rounded-md bg-transparent hover:bg-comet-800 text-comet-400 hover:text-comet-300 transition-colors duration-200"
+                    className="h-9 px-3 flex items-center gap-2 rounded-lg bg-comet-850 hover:bg-comet-800 text-comet-400 hover:text-comet-300 transition-colors duration-300 cursor-pointer"
                   >
                     <SlidersHorizontal size={16} weight="bold" />
                     <span className="text-sm font-medium">Manner</span>
@@ -283,26 +280,26 @@ export function ChatInput({
                     </div>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
-              </DropdownMenu>
+              </DropdownMenu> */}
 
-              {/* Response Mode Badge */}
-              <div className="ml-2">
-                <div className="h-9 px-3 flex items-center gap-2 rounded-md bg-transparent border border-comet-700 text-comet-300 transition-colors duration-200">
+            {/* Response Mode Badge */}
+            {/* <div className="ml-2">
+                <div className="h-9 px-3 flex items-center gap-2 rounded-lg bg-comet-850 hover:bg-comet-800 text-comet-400 hover:text-comet-300 transition-colors duration-300 cursor-pointer">
                   <currentModeConfig.icon size={16} />
                   <span className="text-sm font-medium">
                     {currentModeConfig.label}
                   </span>
                 </div>
               </div>
-            </div>
+            </div> */}
 
             <Button
               type="submit"
               disabled={!canSubmit}
-              size="md"
-              className="h-9 w-9 flex-shrink-0 rounded-md bg-comet-700 hover:bg-comet-800 disabled:bg-comet-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors duration-300 cursor-pointer"
+              className="h-9 px-3 flex-shrink-0 rounded-lg bg-comet-850 hover:bg-comet-800 disabled:bg-comet-900 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors duration-300 text-comet-400 hover:text-comet-300 cursor-pointer"
             >
               <ArrowLineUp size={16} weight="bold" />
+              Send
             </Button>
           </div>
         </form>

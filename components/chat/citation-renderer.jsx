@@ -38,10 +38,6 @@ const MarkdownComponents = {
   p: ({ node, ...props }) => <p className="mb-4 leading-relaxed" {...props} />,
 };
 
-/**
- * CitationRenderer - Renders AI response content with clickable citations
- * Optimized for bullet point summaries with citations
- */
 export function CitationRenderer({ content, citations = [], onCitationClick }) {
   const [activeCitation, setActiveCitation] = useState(null);
   const [clickedCitation, setClickedCitation] = useState(null);
@@ -63,7 +59,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
     );
   }
 
-  // Create a map of citation IDs for quick lookup
   const citationMap = new Map();
   citations.forEach((citation) => {
     citationMap.set(citation.id, citation);
@@ -74,7 +69,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
     setActiveCitation(citationId === activeCitation ? null : citationId);
     setClickedCitation(citationId);
 
-    // Clear the clicked state after a short delay to show visual feedback
     setTimeout(() => setClickedCitation(null), 300);
 
     if (onCitationClick && citation) {
@@ -82,10 +76,8 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
     }
   };
 
-  // Process content with citations - handle both string and array children
   const processTextWithCitations = (text) => {
     if (typeof text !== "string") {
-      // If it's not a string, try to extract text from React elements
       if (React.isValidElement(text)) {
         return text;
       }
@@ -111,12 +103,10 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
         hasCitation: !!citation,
       });
 
-      // Add text before citation
       if (match.index > lastIndex) {
         parts.push(text.substring(lastIndex, match.index));
       }
 
-      // Add clickable citation
       parts.push(
         <CitationLink
           key={`citation-${citationId}-${match.index}`}
@@ -131,7 +121,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
       lastIndex = match.index + match[0].length;
     }
 
-    // Add remaining text
     if (lastIndex < text.length) {
       parts.push(text.substring(lastIndex));
     }
@@ -139,10 +128,8 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
     return parts.length > 1 ? parts : text;
   };
 
-  // Enhanced markdown components that handle citations in text
   const citationMarkdownComponents = {
     ...MarkdownComponents,
-    // Bullet points are the primary place for citations
     li: ({ children, ...props }) => {
       const processedChildren = Array.isArray(children)
         ? children.map((child, index) =>
@@ -156,7 +143,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
         </li>
       );
     },
-    // Also handle citations in paragraphs (fallback)
     p: ({ children, ...props }) => {
       const processedChildren = Array.isArray(children)
         ? children.map((child, index) =>
@@ -170,7 +156,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
         </p>
       );
     },
-    // Handle citations in headings (less common but possible)
     h1: ({ children, ...props }) => {
       const processedChildren = Array.isArray(children)
         ? children.map((child, index) =>
@@ -219,10 +204,6 @@ export function CitationRenderer({ content, citations = [], onCitationClick }) {
   );
 }
 
-/**
- * CitationLink - Individual clickable citation component
- * Simplified with underline and tooltip
- */
 function CitationLink({ citation, citationId, isActive, isClicked, onClick }) {
   const isMatched = citation?.isMatched;
   const confidence = citation?.confidence || 0;
@@ -251,7 +232,7 @@ function CitationLink({ citation, citationId, isActive, isClicked, onClick }) {
       <Tooltip>
         <TooltipTrigger asChild>
           <span
-            className="underline cursor-pointer hover:text-blue-400 transition-colors duration-200"
+            className="underline cursor-pointer text-comet-550 hover:text-blue-400 transition-colors duration-200"
             onClick={handleClick}
             style={{ userSelect: "none" }}
           >

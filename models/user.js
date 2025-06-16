@@ -109,10 +109,16 @@ const UserSchema = new mongoose.Schema(
       dailyResetTime: {
         type: Date,
         default: () => {
-          const tomorrow = new Date();
-          tomorrow.setDate(tomorrow.getDate() + 1);
-          tomorrow.setHours(0, 0, 0, 0);
-          return tomorrow;
+          const now = new Date();
+          const currentHour = now.getHours();
+
+          if (currentHour < 12) {
+            now.setHours(12, 0, 0, 0);
+          } else {
+            now.setDate(now.getDate() + 1);
+            now.setHours(0, 0, 0, 0);
+          }
+          return now;
         },
       },
       hourlyResetTime: {
@@ -177,10 +183,16 @@ UserSchema.methods.resetUsageIfNeeded = async function () {
     this.usage.documentsToday = 0;
     this.usage.youtubeVideosToday = 0;
     this.usage.messagesToday = 0;
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    this.usage.dailyResetTime = tomorrow;
+    const next = new Date(now);
+    const currentHour = next.getHours();
+
+    if (currentHour < 12) {
+      next.setHours(12, 0, 0, 0);
+    } else {
+      next.setDate(next.getDate() + 1);
+      next.setHours(0, 0, 0, 0);
+    }
+    this.usage.dailyResetTime = next;
     needsSave = true;
   }
 

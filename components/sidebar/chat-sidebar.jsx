@@ -16,6 +16,8 @@ export function ChatSidebar({
   onSelectChat,
   onDeleteChat,
   isNewChatPending = false,
+  isPastedContentOpen = false,
+  onClosePastedContent,
 }) {
   const { data: session } = useSession();
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
@@ -123,6 +125,8 @@ export function ChatSidebar({
         onCreateChat={onCreateChat}
         onSelectChat={onSelectChat}
         isNewChatPending={isNewChatPending}
+        isPastedContentOpen={isPastedContentOpen}
+        onClosePastedContent={onClosePastedContent}
       />
 
       <div

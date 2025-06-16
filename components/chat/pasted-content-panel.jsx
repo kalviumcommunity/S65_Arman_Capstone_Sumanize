@@ -1,10 +1,7 @@
-import { Minus } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 
 export function PastedContentPanel({
   content,
-  onClose,
   activeCitation,
   citations = [],
 }) {
@@ -26,7 +23,6 @@ export function PastedContentPanel({
       if (citation && citation.isMatched) {
         scrollToAndHighlightCitation(citation);
       } else if (citation) {
-        // Even if not perfectly matched, try to highlight something
         console.log("Citation not matched, trying fuzzy highlight...");
         scrollToAndHighlightCitation(citation);
       }
@@ -44,7 +40,6 @@ export function PastedContentPanel({
 
     setIsScrolling(true);
 
-    // Multiple strategies to find and highlight the citation
     const strategies = [
       () => highlightByTextPosition(citation),
       () => highlightByTextSearch(citation),
@@ -65,16 +60,14 @@ export function PastedContentPanel({
     }
 
     if (success) {
-      // Simple highlight without animation
       console.log("Successfully highlighted citation:", citation.id);
       setHighlightedCitation(citation.id);
       setTimeout(() => {
         setHighlightedCitation(null);
         setIsScrolling(false);
-      }, 3000); // 3 second highlight duration
+      }, 3000);
     } else {
       console.warn("Failed to locate citation in text:", citation);
-      // Still show visual feedback even if we can't locate the exact text
       setHighlightedCitation(citation.id);
       setTimeout(() => {
         setHighlightedCitation(null);
@@ -93,12 +86,10 @@ export function PastedContentPanel({
         citation.endIndex,
       );
 
-      // Verify the text matches what we expect
       if (
         textContent.substring(citation.startIndex, citation.endIndex) !==
         citationText
       ) {
-        // Fallback for slight mismatches
         if (textContent.toLowerCase().includes(citationText.toLowerCase())) {
           return highlightByTextSearch(citation);
         }
@@ -146,7 +137,6 @@ export function PastedContentPanel({
         .split(/\s+/)
         .filter((word) => word.length > 3);
 
-      // Find the first substantial word from the citation
       for (const word of searchWords) {
         const index = textContent.toLowerCase().indexOf(word);
         if (index !== -1) {
@@ -204,7 +194,6 @@ export function PastedContentPanel({
       const rect = range.getBoundingClientRect();
       const containerRect = contentRef.current.getBoundingClientRect();
 
-      // Enhanced scrolling with better positioning
       const targetScrollTop =
         contentRef.current.scrollTop + rect.top - containerRect.top - 150;
 
@@ -241,7 +230,6 @@ export function PastedContentPanel({
       return content;
     }
 
-    // Sort citations by start position
     const sortedCitations = [...citations]
       .filter((c) => c.isMatched && c.startIndex >= 0)
       .sort((a, b) => a.startIndex - b.startIndex);
@@ -254,7 +242,6 @@ export function PastedContentPanel({
     let lastIndex = 0;
 
     sortedCitations.forEach((citation, index) => {
-      // Add text before citation
       if (citation.startIndex > lastIndex) {
         parts.push(
           <span key={`text-${lastIndex}`}>
@@ -263,7 +250,6 @@ export function PastedContentPanel({
         );
       }
 
-      // Add highlighted citation
       const isActive = activeCitation === citation.id;
       const isHighlighted = highlightedCitation === citation.id;
       const partContent = content.substring(
@@ -274,7 +260,6 @@ export function PastedContentPanel({
       let highlightClass = "transition-all duration-200 rounded-sm";
 
       if (isHighlighted) {
-        // Simple yellow highlight instead of red animation
         highlightClass += " bg-yellow-400/60 px-1";
       } else if (isActive) {
         if (citation.confidence >= 0.9) {
@@ -299,7 +284,6 @@ export function PastedContentPanel({
       lastIndex = citation.endIndex;
     });
 
-    // Add remaining text
     if (lastIndex < content.length) {
       parts.push(
         <span key={`text-${lastIndex}`}>{content.substring(lastIndex)}</span>,
@@ -319,7 +303,6 @@ export function PastedContentPanel({
 
   return (
     <div className="w-1/2 bg-comet-850 flex flex-col">
-      {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-neutral-700 bg-comet-900">
         <div className="flex flex-col">
           <h3 className="text-lg font-semibold text-comet-100">
@@ -333,16 +316,8 @@ export function PastedContentPanel({
             </div>
           )}
         </div>
-        <Button
-          size="sm"
-          onClick={onClose}
-          className="h-8 w-8 p-0 text-comet-100 bg-red-950 hover:bg-red-900 transition-colors duration-200 cursor-pointer rounded-full"
-        >
-          <Minus size={16} weight="bold" />
-        </Button>
       </div>
 
-      {/* Content */}
       <div
         ref={contentRef}
         className="flex-1 overflow-y-auto p-6 text-sm text-comet-50 bg-comet-900"

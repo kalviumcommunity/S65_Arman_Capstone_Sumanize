@@ -35,8 +35,11 @@
     "mongoose": "^8.15.2",
     "next": "15.3.2",
     "next-auth": "^5.0.0-beta.28",
+    "node-cron": "^4.1.0",
+    "razorpay": "^2.9.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-hook-form": "^7.58.0",
     "react-markdown": "^10.1.0",
     "tailwind-merge": "^3.3.0"
   },

@@ -243,7 +243,7 @@ export function AccountModal({ isOpen, onClose, user, usage, onUsageUpdate }) {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-comet-100">
-                        Daily Usage
+                        Usage (12h cycle)
                       </CardTitle>
                       <Badge
                         variant="secondary"
@@ -293,7 +293,7 @@ export function AccountModal({ isOpen, onClose, user, usage, onUsageUpdate }) {
                     {isAtLimit && (
                       <div className="flex items-center gap-2 text-xs text-red-400 bg-red-950/30 rounded-md p-2">
                         <Warning size={14} />
-                        <span>Daily limit reached</span>
+                        <span>Limit reached</span>
                       </div>
                     )}
 

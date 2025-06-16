@@ -2,15 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { AccountModal } from "./account-modal";
 import { Button } from "@/components/ui/button";
 
 export default function UserAccount({ user }) {
   const { data: session } = useSession();
+  const router = useRouter();
   const [usage, setUsage] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const firstLetter =
     user && user.name && typeof user.name === "string"
@@ -48,6 +48,10 @@ export default function UserAccount({ user }) {
     };
   }, []);
 
+  const handleAccountClick = () => {
+    router.push("/account");
+  };
+
   if (!usage || loading) {
     return (
       <div className="p-2">
@@ -72,33 +76,23 @@ export default function UserAccount({ user }) {
   }
 
   return (
-    <>
-      <div className="p-2">
-        <Button
-          onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-start gap-3 w-full rounded-xl p-4 bg-comet-900 hover:bg-comet-850 transition-colors focus:outline-none cursor-pointer shadow-none"
-          title="Open Account Settings"
-          size="md"
-        >
-          <Avatar className="h-10 w-10 rounded-lg border-2 border-comet-600">
-            <AvatarFallback className="bg-comet-400 rounded-md text-comet-900">
-              {firstLetter}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col text-sm text-left">
-            <span className="font-medium">{user.name}</span>
-            <span className="text-xs text-comet-400">{user.email}</span>
-          </div>
-        </Button>
-      </div>
-
-      <AccountModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        user={user}
-        usage={usage}
-        onUsageUpdate={fetchUsage}
-      />
-    </>
+    <div className="p-2">
+      <Button
+        onClick={handleAccountClick}
+        className="flex items-center justify-start gap-3 w-full rounded-xl p-4 bg-comet-900 hover:bg-comet-850 transition-colors focus:outline-none cursor-pointer shadow-none"
+        title="Open Account Settings"
+        size="md"
+      >
+        <Avatar className="h-10 w-10 rounded-lg border-2 border-comet-600">
+          <AvatarFallback className="bg-comet-400 rounded-md text-comet-900">
+            {firstLetter}
+          </AvatarFallback>
+        </Avatar>
+        <div className="flex flex-col text-sm text-left">
+          <span className="font-medium">{user.name}</span>
+          <span className="text-xs text-comet-400">{user.email}</span>
+        </div>
+      </Button>
+    </div>
   );
 }

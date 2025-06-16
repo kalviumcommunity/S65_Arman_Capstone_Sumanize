@@ -1,17 +1,12 @@
+import { Spinner } from "@phosphor-icons/react";
+
 export function LoadingIndicator() {
   return (
     <div className="flex justify-start">
-      <div className="bg-neutral-700 text-white px-4 py-3 rounded-lg">
-        <div className="flex space-x-1">
-          <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-          <div
-            className="w-2 h-2 bg-white rounded-full animate-bounce"
-            style={{ animationDelay: "0.1s" }}
-          ></div>
-          <div
-            className="w-2 h-2 bg-white rounded-full animate-bounce"
-            style={{ animationDelay: "0.2s" }}
-          ></div>
+      <div className="bg-comet-900 text-comet-300 px-4 py-3 rounded-lg">
+        <div className="flex items-center space-x-3">
+          <Spinner size={18} className="animate-spin" />
+          <span className="text-sm">Generating response...</span>
         </div>
       </div>
     </div>

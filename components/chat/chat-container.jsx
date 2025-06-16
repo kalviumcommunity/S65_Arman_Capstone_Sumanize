@@ -23,48 +23,15 @@ export function ChatContainer({
   isLoading,
   setIsLoading,
   isAuthenticated,
+  pastedContentView,
+  currentCitations,
+  activeCitation,
+  onPastedContentClick,
+  onClosePastedContent,
+  onCitationClick,
 }) {
   const { data: session } = useSession();
-  const [pastedContentView, setPastedContentView] = useState(null);
-  const [currentCitations, setCurrentCitations] = useState([]);
-  const [activeCitation, setActiveCitation] = useState(null);
-
-  const handlePastedContentClick = (content, citations = []) => {
-    setPastedContentView(content);
-    setCurrentCitations(citations || []);
-    setActiveCitation(null);
-  };
-
-  const handleClosePastedContent = () => {
-    setPastedContentView(null);
-    setCurrentCitations([]);
-    setActiveCitation(null);
-  };
-
-  const handleCitationClick = (citation, citationId, message) => {
-    console.log("Citation click in container:", {
-      citation,
-      citationId,
-      messageHasPastedContent: !!message.pastedContent,
-      currentPastedContentView: !!pastedContentView,
-      messageCitations: message.citations?.length || 0,
-    });
-
-    // If pasted content panel is not open, open it with the message's pasted content
-    if (!pastedContentView && message.pastedContent) {
-      console.log("Opening pasted content panel with citations");
-      setPastedContentView(message.pastedContent);
-      setCurrentCitations(message.citations || []);
-    } else if (pastedContentView && message.citations) {
-      // Update citations if panel is already open
-      console.log("Updating current citations");
-      setCurrentCitations(message.citations);
-    }
-
-    // Set active citation for highlighting
-    console.log("Setting active citation:", citationId);
-    setActiveCitation(citationId);
-  };
+  const [regeneratingMessageId, setRegeneratingMessageId] = useState(null);
 
   const handleSendMessage = async (messageData) => {
     const messageContent =
@@ -177,6 +144,84 @@ export function ChatContainer({
     }
   };
 
+  const handleRegenerate = async (aiMessage) => {
+    try {
+      // Find the user message that preceded this AI message
+      const messageIndex = messages.findIndex((msg) => msg.id === aiMessage.id);
+      if (messageIndex <= 0) return; // No previous message or this is the first message
+
+      const userMessage = messages[messageIndex - 1];
+      if (userMessage.role !== "user") return; // Previous message is not from user
+
+      console.log("Starting regeneration for message:", {
+        aiMessageId: aiMessage.id,
+        aiMessageRole: aiMessage.role,
+        userMessageId: userMessage.id,
+        chatId: activeChatId,
+      });
+
+      setRegeneratingMessageId(aiMessage.id);
+      setIsLoading(true);
+
+      // Delete the old AI response from the database first
+      try {
+        console.log("Attempting to delete message:", aiMessage.id);
+        const deleteResponse = await fetch(
+          `/api/chats/${activeChatId}/messages/${aiMessage.id}`,
+          {
+            method: "DELETE",
+          },
+        );
+
+        const deleteResult = await deleteResponse.json();
+        console.log("Delete response:", {
+          status: deleteResponse.status,
+          ok: deleteResponse.ok,
+          result: deleteResult,
+        });
+
+        if (!deleteResponse.ok) {
+          console.error("Failed to delete old AI message from database:", {
+            status: deleteResponse.status,
+            error: deleteResult.error,
+            details: deleteResult.details,
+          });
+          // Continue anyway, but log the error
+        } else {
+          console.log(
+            "Successfully deleted old AI message from database:",
+            deleteResult,
+          );
+        }
+      } catch (deleteError) {
+        console.error("Error deleting old AI message:", deleteError);
+        // Continue anyway
+      }
+
+      // Remove the current AI response from UI
+      setMessages((prev) => prev.filter((msg) => msg.id !== aiMessage.id));
+
+      // Resend the user message using Ably
+      console.log("Resending user message via Ably:", userMessage.id);
+      const success = await ably.sendMessage(userMessage, activeChatId);
+      if (!success) {
+        console.error("Failed to regenerate response");
+        setIsLoading(false);
+        setRegeneratingMessageId(null);
+        // Re-add the AI message back if regeneration failed
+        setMessages((prev) => [...prev, aiMessage]);
+      } else {
+        console.log("Successfully initiated regeneration via Ably");
+        // Clear the regenerating state when successful
+        setRegeneratingMessageId(null);
+      }
+    } catch (error) {
+      console.error("Error regenerating response:", error);
+      setIsLoading(false);
+      setRegeneratingMessageId(null);
+    }
+  };
+
   const activeChat = chats.find((chat) => chat.chatId === activeChatId);
   const chatTitle = isNewChatPending ? "New Chat" : activeChat?.title || "Chat";
 
@@ -215,9 +260,13 @@ export function ChatContainer({
               isLoading={isLoading}
               messagesEndRef={messagesEndRef}
               onSendMessage={handleSendMessage}
-              onPastedContentClick={handlePastedContentClick}
-              onCitationClick={handleCitationClick}
+              onPastedContentClick={onPastedContentClick}
+              onCitationClick={onCitationClick}
               isInSplitView={!!pastedContentView}
+              onRegenerate={handleRegenerate}
+              isRegenerating={regeneratingMessageId}
+              isPastedContentOpen={!!pastedContentView}
+              currentPastedContent={pastedContentView}
             />
           )}
 
@@ -237,7 +286,7 @@ export function ChatContainer({
           content={pastedContentView}
           citations={currentCitations}
           activeCitation={activeCitation}
-          onClose={handleClosePastedContent}
+          onClose={onClosePastedContent}
         />
       )}
     </div>
