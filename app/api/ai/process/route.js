@@ -273,7 +273,6 @@ export async function POST(request) {
     console.error("Error message:", error.message);
     console.error("Error stack:", error.stack);
 
-    // Handle specific error types
     let errorMessage = "Internal server error";
     let statusCode = 500;
 
