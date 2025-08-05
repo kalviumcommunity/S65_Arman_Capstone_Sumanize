@@ -2,21 +2,21 @@ import { CursorClick } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Crown, HardHat, Horse } from "@phosphor-icons/react";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 export function EmptyState({ onSendMessage }) {
-  const demoSummaries = [
-    {
-      id: "1",
-      icon: <Crown size={24} weight="bold" className="inline-block" />,
-      title: "The Roman Empire",
-      description:
-        "An exploration of the Roman Empire's rise, innovations, decline, and its lasting influence",
-      content: `## The Enduring Legacy of the Roman Empire
+	const demoSummaries = [
+		{
+			id: "1",
+			icon: <Crown size={24} weight="bold" className="inline-block" />,
+			title: "The Roman Empire",
+			description:
+				"An exploration of the Roman Empire's rise, innovations, decline, and its lasting influence",
+			content: `## The Enduring Legacy of the Roman Empire
 
 The Roman Empire, a civilization that dominated the Mediterranean world for centuries, left an indelible mark on law, politics, architecture, and culture that continues to resonate today. From its humble beginnings as a small settlement on the Italian peninsula, Rome rose to become a formidable power, shaping the course of Western civilization. Its rise, zenith, and eventual decline offer invaluable lessons in the dynamics of power, governance, and societal evolution.
 
@@ -29,16 +29,16 @@ However, the seeds of decline were also present within the Empire. Over time, in
 In 395 AD, the Empire was formally divided into the Western and Eastern Roman Empires, a move that reflected the growing challenges of governing such a vast territory. The Western Roman Empire, plagued by internal weaknesses and external invasions, eventually fell in 476 AD. The Eastern Roman Empire, also known as the Byzantine Empire, continued to thrive for another thousand years, preserving Roman traditions and culture.
 
 Despite its eventual decline and fall, the legacy of the Roman Empire endures. Its contributions to law, language, architecture, and political thought continue to shape Western civilization. The Latin language, the foundation of the Romance languages, is a testament to Rome's linguistic influence. Roman architectural innovations, such as arches, domes, and concrete, are still employed in modern construction. The principles of Roman law and governance continue to inform legal and political systems around the world. The Roman Empire stands as a powerful reminder of the rise and fall of civilizations, and its enduring legacy serves as a testament to its profound impact on human history.`,
-      prompt:
-        "Summarize this essay on the Roman Empire, highlighting its key phases, major achievements, and the reasons for its decline.",
-    },
-    {
-      id: "2",
-      icon: <HardHat size={24} weight="bold" className="inline-block" />,
-      title: "The Industrial Revolution",
-      description:
-        "An Industrial Revolution overview, key societal and economic shifts, and its lasting global impact.",
-      content: `## The Transformative Power of the Industrial Revolution
+			prompt:
+				"Summarize this essay on the Roman Empire, highlighting its key phases, major achievements, and the reasons for its decline.",
+		},
+		{
+			id: "2",
+			icon: <HardHat size={24} weight="bold" className="inline-block" />,
+			title: "The Industrial Revolution",
+			description:
+				"An Industrial Revolution overview, key societal and economic shifts, and its lasting global impact.",
+			content: `## The Transformative Power of the Industrial Revolution
 
 The Industrial Revolution, a period of unprecedented technological advancement and societal transformation, fundamentally reshaped the world, ushering in new modes of production, transportation, and communication. Originating in Great Britain in the late 18th century, it quickly spread across Europe and North America, impacting every facet of human life, from agriculture and manufacturing to social structures and global power dynamics. Its legacy continues to influence our world today, shaping our economies, environments, and social interactions.
 
@@ -53,16 +53,16 @@ The social consequences of the Industrial Revolution were far-reaching. The grow
 The Industrial Revolution had a significant impact on the environment. The burning of coal to power factories and transportation led to increased air pollution, contributing to respiratory problems and other health issues. The extraction of raw materials, such as coal and iron ore, caused deforestation and environmental degradation. The disposal of industrial waste polluted rivers and streams, harming aquatic ecosystems. The Industrial Revolution laid the foundation for many of the environmental challenges we face today.
 
 In conclusion, the Industrial Revolution was a transformative period in human history, characterized by unprecedented technological advancement, economic growth, and social change. While it brought about significant improvements in living standards and increased access to goods and services, it also created new social and environmental challenges. Understanding the Industrial Revolution is essential for comprehending the trajectory of modern society and for addressing the challenges we face today.`,
-      prompt:
-        "Analyze this text on the Industrial Revolution and provide a summary of its core innovations and societal consequences.",
-    },
-    {
-      id: "3",
-      icon: <Horse size={24} weight="bold" className="inline-block" />,
-      title: "An Expansion Strategy",
-      description:
-        "A strategic plan for 'Aperture Innovations' to enter the European market, targeting key sectors",
-      content: `## Strategic Plan: Aperture Innovations - European Market Entry
+			prompt:
+				"Analyze this text on the Industrial Revolution and provide a summary of its core innovations and societal consequences.",
+		},
+		{
+			id: "3",
+			icon: <Horse size={24} weight="bold" className="inline-block" />,
+			title: "An Expansion Strategy",
+			description:
+				"A strategic plan for 'Aperture Innovations' to enter the European market, targeting key sectors",
+			content: `## Strategic Plan: Aperture Innovations - European Market Entry
 
 **Executive Summary:** This strategic plan outlines Aperture Innovations' approach to entering the European market, focusing on phased market entry and targeting key sectors where its technological solutions offer a competitive advantage. The plan emphasizes localized adaptation, strategic partnerships, and a robust understanding of European regulations and cultural nuances to ensure sustainable growth and market leadership.
 
@@ -128,66 +128,66 @@ In conclusion, the Industrial Revolution was a transformative period in human hi
 **Conclusion:**
 
 This strategic plan provides a roadmap for Aperture Innovations to successfully enter and thrive in the European market. By focusing on targeted sectors, building strong partnerships, and adapting to local conditions, Aperture Innovations can achieve its objectives and establish a sustainable competitive advantage.`,
-      prompt:
-        "Condense this strategic business plan into a summary covering the main objectives, market opportunity, and phased rollout strategy.",
-    },
-  ];
+			prompt:
+				"Condense this strategic business plan into a summary covering the main objectives, market opportunity, and phased rollout strategy.",
+		},
+	];
 
-  const handleDemoClick = (demo) => {
-    if (onSendMessage) {
-      onSendMessage({
-        content: demo.prompt,
-        pastedContent: demo.content,
-      });
-    }
-  };
+	const handleDemoClick = (demo) => {
+		if (onSendMessage) {
+			onSendMessage({
+				content: demo.prompt,
+				pastedContent: demo.content,
+			});
+		}
+	};
 
-  return (
-    <div className="flex items-center justify-center h-full p-4">
-      <div className="text-center w-full">
-        <div className="flex justify-center">
-          <CursorClick size={48} weight="bold" />
-        </div>
-        <h2 className="text-6xl font-serif mb-4">Sumanize</h2>
+	return (
+		<div className="flex items-center justify-center h-full p-4">
+			<div className="text-center w-full">
+				<div className="flex justify-center">
+					<CursorClick size={48} weight="bold" />
+				</div>
+				<h2 className="text-6xl font-serif mb-4">Sumanize</h2>
 
-        <div className="text-sm text-comet-550 bg-comet-850 rounded-xl p-4 max-w-md mx-auto mb-4">
-          Paste large documents directly for a cleaner conversation or use the
-          demo examples below.
-        </div>
-        <div className="max-w-5xl mx-auto px-4">
-          <TooltipProvider>
-            <div className="flex gap-3 justify-center">
-              {demoSummaries.map((demo) => {
-                return (
-                  <Tooltip key={demo.id}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        onClick={() => handleDemoClick(demo)}
-                        className="h-auto flex-1 max-w-72 bg-comet-850 hover:bg-comet-900 transition-colors duration-300 rounded-xl flex-col items-start p-4 text-left whitespace-normal cursor-pointer"
-                      >
-                        <h3 className="font-medium text-comet-400 flex items-center gap-2 text-sm">
-                          {demo.icon}
-                          {demo.title}
-                        </h3>
-                        <p className="text-comet-500 font-serif text-sm line-clamp-3">
-                          {demo.description}
-                        </p>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent
-                      side="bottom"
-                      align="center"
-                      className="max-w-xs text-sm text-comet-100"
-                    >
-                      Click to summarize
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-          </TooltipProvider>
-        </div>
-      </div>
-    </div>
-  );
+				<div className="text-sm text-comet-550 bg-comet-850 rounded-xl p-4 max-w-md mx-auto mb-4">
+					Paste large documents directly for a cleaner conversation or use the
+					demo examples below.
+				</div>
+				<div className="max-w-5xl mx-auto px-4">
+					<TooltipProvider>
+						<div className="flex gap-3 justify-center">
+							{demoSummaries.map((demo) => {
+								return (
+									<Tooltip key={demo.id}>
+										<TooltipTrigger asChild>
+											<Button
+												onClick={() => handleDemoClick(demo)}
+												className="h-auto flex-1 max-w-72 bg-comet-850 hover:bg-comet-900 transition-colors duration-300 rounded-xl flex-col items-start p-4 text-left whitespace-normal cursor-pointer"
+											>
+												<h3 className="font-medium text-comet-400 flex items-center gap-2 text-sm">
+													{demo.icon}
+													{demo.title}
+												</h3>
+												<p className="text-comet-500 font-serif text-sm line-clamp-3">
+													{demo.description}
+												</p>
+											</Button>
+										</TooltipTrigger>
+										<TooltipContent
+											side="bottom"
+											align="center"
+											className="max-w-xs text-sm text-comet-100"
+										>
+											Click to summarize
+										</TooltipContent>
+									</Tooltip>
+								);
+							})}
+						</div>
+					</TooltipProvider>
+				</div>
+			</div>
+		</div>
+	);
 }

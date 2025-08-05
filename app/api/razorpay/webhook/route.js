@@ -15,16 +15,16 @@ import { NextResponse } from "next/server";
 // import User from "@/models/user";
 
 export async function POST(req) {
-  // WEBHOOK FUNCTIONALITY DISABLED FOR DEVELOPMENT
-  return NextResponse.json(
-    {
-      message: "Webhook functionality is currently disabled for development",
-      note: "Enable webhooks in production by uncommenting the code in this file",
-    },
-    { status: 200 },
-  );
+	// WEBHOOK FUNCTIONALITY DISABLED FOR DEVELOPMENT
+	return NextResponse.json(
+		{
+			message: "Webhook functionality is currently disabled for development",
+			note: "Enable webhooks in production by uncommenting the code in this file",
+		},
+		{ status: 200 },
+	);
 
-  /* UNCOMMENT FOR PRODUCTION WEBHOOK FUNCTIONALITY
+	/* UNCOMMENT FOR PRODUCTION WEBHOOK FUNCTIONALITY
   try {
     const body = await req.text();
     const signature = req.headers.get("x-razorpay-signature");

@@ -10,173 +10,173 @@ import { DeleteConfirmAlert } from "./delete-confirm-alert";
 import UserAccount from "@/components/auth/user-account";
 
 export function ChatSidebar({
-  chats = [],
-  activeChatId,
-  onCreateChat,
-  onSelectChat,
-  onDeleteChat,
-  isNewChatPending = false,
-  isPastedContentOpen = false,
-  onClosePastedContent,
+	chats = [],
+	activeChatId,
+	onCreateChat,
+	onSelectChat,
+	onDeleteChat,
+	isNewChatPending = false,
+	isPastedContentOpen = false,
+	onClosePastedContent,
 }) {
-  const { data: session } = useSession();
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [isCollapsed, setIsCollapsed] = useState(true);
-  const [pinnedChatIds, setPinnedChatIds] = useState(new Set());
-  const isInitialMount = useRef(true);
+	const { data: session } = useSession();
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+	const [searchQuery, setSearchQuery] = useState("");
+	const [isCollapsed, setIsCollapsed] = useState(true);
+	const [pinnedChatIds, setPinnedChatIds] = useState(new Set());
+	const isInitialMount = useRef(true);
 
-  useEffect(() => {
-    try {
-      const savedPinnedChats = localStorage.getItem("pinned-chats");
-      if (savedPinnedChats) {
-        setPinnedChatIds(new Set(JSON.parse(savedPinnedChats)));
-      }
-    } catch (error) {
-      console.error("Error loading pinned chats from localStorage:", error);
-    }
-  }, []);
+	useEffect(() => {
+		try {
+			const savedPinnedChats = localStorage.getItem("pinned-chats");
+			if (savedPinnedChats) {
+				setPinnedChatIds(new Set(JSON.parse(savedPinnedChats)));
+			}
+		} catch (error) {
+			console.error("Error loading pinned chats from localStorage:", error);
+		}
+	}, []);
 
-  useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+	useEffect(() => {
+		if (isInitialMount.current) {
+			isInitialMount.current = false;
+			return;
+		}
 
-    try {
-      localStorage.setItem(
-        "pinned-chats",
-        JSON.stringify(Array.from(pinnedChatIds)),
-      );
-    } catch (error) {
-      console.error("Error saving pinned chats to localStorage:", error);
-    }
-  }, [pinnedChatIds]);
+		try {
+			localStorage.setItem(
+				"pinned-chats",
+				JSON.stringify(Array.from(pinnedChatIds)),
+			);
+		} catch (error) {
+			console.error("Error saving pinned chats to localStorage:", error);
+		}
+	}, [pinnedChatIds]);
 
-  const handleDeleteClick = (chatId) => {
-    setShowDeleteConfirm(chatId);
-  };
+	const handleDeleteClick = (chatId) => {
+		setShowDeleteConfirm(chatId);
+	};
 
-  const confirmDelete = async (chatId) => {
-    setPinnedChatIds((prev) => {
-      const newSet = new Set(prev);
-      newSet.delete(chatId);
-      return newSet;
-    });
+	const confirmDelete = async (chatId) => {
+		setPinnedChatIds((prev) => {
+			const newSet = new Set(prev);
+			newSet.delete(chatId);
+			return newSet;
+		});
 
-    if (onDeleteChat) {
-      await onDeleteChat(chatId);
-    }
-    setShowDeleteConfirm(null);
-  };
+		if (onDeleteChat) {
+			await onDeleteChat(chatId);
+		}
+		setShowDeleteConfirm(null);
+	};
 
-  const cancelDelete = () => {
-    setShowDeleteConfirm(null);
-  };
+	const cancelDelete = () => {
+		setShowDeleteConfirm(null);
+	};
 
-  const toggleCollapse = () => {
-    setIsCollapsed(!isCollapsed);
-  };
+	const toggleCollapse = () => {
+		setIsCollapsed(!isCollapsed);
+	};
 
-  const handlePinToggle = (chatId, isPinned) => {
-    setPinnedChatIds((prev) => {
-      const newSet = new Set(prev);
-      if (isPinned) {
-        newSet.delete(chatId);
-      } else {
-        newSet.add(chatId);
-      }
-      return newSet;
-    });
-  };
+	const handlePinToggle = (chatId, isPinned) => {
+		setPinnedChatIds((prev) => {
+			const newSet = new Set(prev);
+			if (isPinned) {
+				newSet.delete(chatId);
+			} else {
+				newSet.add(chatId);
+			}
+			return newSet;
+		});
+	};
 
-  const isToday = (date) => {
-    const today = new Date();
-    const chatDate = new Date(date);
-    return (
-      chatDate.getDate() === today.getDate() &&
-      chatDate.getMonth() === today.getMonth() &&
-      chatDate.getFullYear() === today.getFullYear()
-    );
-  };
+	const isToday = (date) => {
+		const today = new Date();
+		const chatDate = new Date(date);
+		return (
+			chatDate.getDate() === today.getDate() &&
+			chatDate.getMonth() === today.getMonth() &&
+			chatDate.getFullYear() === today.getFullYear()
+		);
+	};
 
-  const chatsWithPinStatus = chats.map((chat) => ({
-    ...chat,
-    isPinned: pinnedChatIds.has(chat.chatId),
-  }));
+	const chatsWithPinStatus = chats.map((chat) => ({
+		...chat,
+		isPinned: pinnedChatIds.has(chat.chatId),
+	}));
 
-  const filteredChats = chatsWithPinStatus.filter((chat) =>
-    chat.title.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
+	const filteredChats = chatsWithPinStatus.filter((chat) =>
+		chat.title.toLowerCase().includes(searchQuery.toLowerCase()),
+	);
 
-  const pinnedChats = filteredChats.filter((chat) => chat.isPinned);
-  const todayChats = filteredChats.filter(
-    (chat) => !chat.isPinned && chat.createdAt && isToday(chat.createdAt),
-  );
-  const olderChats = filteredChats.filter(
-    (chat) => !chat.isPinned && (!chat.createdAt || !isToday(chat.createdAt)),
-  );
+	const pinnedChats = filteredChats.filter((chat) => chat.isPinned);
+	const todayChats = filteredChats.filter(
+		(chat) => !chat.isPinned && chat.createdAt && isToday(chat.createdAt),
+	);
+	const olderChats = filteredChats.filter(
+		(chat) => !chat.isPinned && (!chat.createdAt || !isToday(chat.createdAt)),
+	);
 
-  return (
-    <div className="relative flex text-neutral-300">
-      <SidebarHeader
-        isCollapsed={isCollapsed}
-        onToggleCollapse={toggleCollapse}
-        onCreateChat={onCreateChat}
-        onSelectChat={onSelectChat}
-        isNewChatPending={isNewChatPending}
-        isPastedContentOpen={isPastedContentOpen}
-        onClosePastedContent={onClosePastedContent}
-      />
+	return (
+		<div className="relative flex text-neutral-300">
+			<SidebarHeader
+				isCollapsed={isCollapsed}
+				onToggleCollapse={toggleCollapse}
+				onCreateChat={onCreateChat}
+				onSelectChat={onSelectChat}
+				isNewChatPending={isNewChatPending}
+				isPastedContentOpen={isPastedContentOpen}
+				onClosePastedContent={onClosePastedContent}
+			/>
 
-      <div
-        className={`flex-shrink-0 bg-comet-900 border-none rounded-r-2xl transition-all duration-300 ease-in-out overflow-hidden ${
-          isCollapsed ? "w-0" : "w-78"
-        }`}
-      >
-        <div className="h-full flex flex-col">
-          <NewChatButton onCreateChat={onCreateChat} />
+			<div
+				className={`flex-shrink-0 bg-comet-900 border-none rounded-r-2xl transition-all duration-300 ease-in-out overflow-hidden ${
+					isCollapsed ? "w-0" : "w-78"
+				}`}
+			>
+				<div className="h-full flex flex-col">
+					<NewChatButton onCreateChat={onCreateChat} />
 
-          <SearchInput
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-          />
+					<SearchInput
+						searchQuery={searchQuery}
+						onSearchChange={setSearchQuery}
+					/>
 
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-2">
-              <ChatList
-                chats={chats}
-                activeChatId={activeChatId}
-                searchQuery={searchQuery}
-                pinnedChatIds={pinnedChatIds}
-                onSelectChat={onSelectChat}
-                onPinToggle={handlePinToggle}
-                onDeleteClick={handleDeleteClick}
-              />
-            </div>
-          </div>
+					<div className="flex-1 overflow-y-auto">
+						<div className="p-2">
+							<ChatList
+								chats={chats}
+								activeChatId={activeChatId}
+								searchQuery={searchQuery}
+								pinnedChatIds={pinnedChatIds}
+								onSelectChat={onSelectChat}
+								onPinToggle={handlePinToggle}
+								onDeleteClick={handleDeleteClick}
+							/>
+						</div>
+					</div>
 
-          <div className="p-2">
-            {session?.user ? (
-              <UserAccount user={session.user} />
-            ) : (
-              <AuthButtons />
-            )}
-          </div>
-        </div>
-      </div>
+					<div className="p-2">
+						{session?.user ? (
+							<UserAccount user={session.user} />
+						) : (
+							<AuthButtons />
+						)}
+					</div>
+				</div>
+			</div>
 
-      <DeleteConfirmAlert
-        chatId={showDeleteConfirm}
-        isOpen={!!showDeleteConfirm}
-        onConfirm={confirmDelete}
-        onCancel={cancelDelete}
-        onOpenChange={(open) => {
-          if (!open) {
-            cancelDelete();
-          }
-        }}
-      />
-    </div>
-  );
+			<DeleteConfirmAlert
+				chatId={showDeleteConfirm}
+				isOpen={!!showDeleteConfirm}
+				onConfirm={confirmDelete}
+				onCancel={cancelDelete}
+				onOpenChange={(open) => {
+					if (!open) {
+						cancelDelete();
+					}
+				}}
+			/>
+		</div>
+	);
 }

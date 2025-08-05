@@ -1,10 +1,1 @@
 node_modules
-build
-dist
-.next
-out
-coverage
-public
-*.lock
-*.md
-*.svg

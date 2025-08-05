@@ -173,271 +173,271 @@ IMPORTANT: When analyzing text, please structure your response using bullet poin
 **This citation requirement does not apply to code explanations.**`;
 
 export async function POST(request) {
-  try {
-    const session = await auth();
-    const rateLimitResult = await checkRateLimit(request, session);
+	try {
+		const session = await auth();
+		const rateLimitResult = await checkRateLimit(request, session);
 
-    if (!rateLimitResult.allowed) {
-      console.log("Rate limit exceeded:", {
-        error: rateLimitResult.error,
-        usage: rateLimitResult.usage,
-        resetTime: rateLimitResult.resetTime,
-      });
+		if (!rateLimitResult.allowed) {
+			console.log("Rate limit exceeded:", {
+				error: rateLimitResult.error,
+				usage: rateLimitResult.usage,
+				resetTime: rateLimitResult.resetTime,
+			});
 
-      return NextResponse.json(
-        {
-          error: rateLimitResult.error,
-          rateLimited: true,
-          usage: rateLimitResult.usage,
-          resetTime: rateLimitResult.resetTime,
-        },
-        { status: 429 },
-      );
-    }
+			return NextResponse.json(
+				{
+					error: rateLimitResult.error,
+					rateLimited: true,
+					usage: rateLimitResult.usage,
+					resetTime: rateLimitResult.resetTime,
+				},
+				{ status: 429 },
+			);
+		}
 
-    if (!session?.user?.id) {
-      console.log("Authentication failed: No session or user ID");
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+		if (!session?.user?.id) {
+			console.log("Authentication failed: No session or user ID");
+			return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+		}
 
-    const { message, chatId } = await request.json();
+		const { message, chatId } = await request.json();
 
-    if (!message || !chatId) {
-      console.log("Missing required fields:", {
-        hasMessage: !!message,
-        hasChatId: !!chatId,
-      });
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 },
-      );
-    }
+		if (!message || !chatId) {
+			console.log("Missing required fields:", {
+				hasMessage: !!message,
+				hasChatId: !!chatId,
+			});
+			return NextResponse.json(
+				{ error: "Missing required fields" },
+				{ status: 400 },
+			);
+		}
 
-    await connectDB();
+		await connectDB();
 
-    const chat = await Chat.findOne({
-      chatId,
-      userId: session.user.id,
-    }).lean();
+		const chat = await Chat.findOne({
+			chatId,
+			userId: session.user.id,
+		}).lean();
 
-    if (!chat) {
-      console.log("Chat not found:", { chatId, userId: session.user.id });
-      return NextResponse.json({ error: "Chat not found" }, { status: 404 });
-    }
+		if (!chat) {
+			console.log("Chat not found:", { chatId, userId: session.user.id });
+			return NextResponse.json({ error: "Chat not found" }, { status: 404 });
+		}
 
-    if (!process.env.ABLY_API_KEY) {
-      console.error("ABLY_API_KEY environment variable is not set");
-      return NextResponse.json(
-        { error: "Server configuration error" },
-        { status: 500 },
-      );
-    }
+		if (!process.env.ABLY_API_KEY) {
+			console.error("ABLY_API_KEY environment variable is not set");
+			return NextResponse.json(
+				{ error: "Server configuration error" },
+				{ status: 500 },
+			);
+		}
 
-    const ably = new Ably.Rest(process.env.ABLY_API_KEY);
-    const aiChannel = ably.channels.get(
-      `ai-responses:${session.user.id}:${chatId}`,
-    );
-    const statusChannel = ably.channels.get(
-      `ai-status:${session.user.id}:${chatId}`,
-    );
+		const ably = new Ably.Rest(process.env.ABLY_API_KEY);
+		const aiChannel = ably.channels.get(
+			`ai-responses:${session.user.id}:${chatId}`,
+		);
+		const statusChannel = ably.channels.get(
+			`ai-status:${session.user.id}:${chatId}`,
+		);
 
-    await statusChannel.publish("ai-started", {
-      type: "processing-started",
-      chatId,
-      usage: rateLimitResult.usage,
-      timestamp: new Date().toISOString(),
-    });
+		await statusChannel.publish("ai-started", {
+			type: "processing-started",
+			chatId,
+			usage: rateLimitResult.usage,
+			timestamp: new Date().toISOString(),
+		});
 
-    const googleAiKey =
-      process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
-    if (!googleAiKey) {
-      console.error(
-        "Google AI API key not found. Checked GOOGLE_AI_API_KEY and GEMINI_API_KEY",
-      );
-      return NextResponse.json(
-        { error: "AI service configuration error" },
-        { status: 500 },
-      );
-    }
+		const googleAiKey =
+			process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY;
+		if (!googleAiKey) {
+			console.error(
+				"Google AI API key not found. Checked GOOGLE_AI_API_KEY and GEMINI_API_KEY",
+			);
+			return NextResponse.json(
+				{ error: "AI service configuration error" },
+				{ status: 500 },
+			);
+		}
 
-    const genAI = new GoogleGenerativeAI(googleAiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+		const genAI = new GoogleGenerativeAI(googleAiKey);
+		const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-    const conversationHistory = [
-      {
-        role: "user",
-        parts: [{ text: SYSTEM_PROMPT }],
-      },
-      {
-        role: "model",
-        parts: [
-          {
-            text: "I understand. I will create structured summaries using bullet points with citations when analyzing pasted content. How can I help you today?",
-          },
-        ],
-      },
-    ];
+		const conversationHistory = [
+			{
+				role: "user",
+				parts: [{ text: SYSTEM_PROMPT }],
+			},
+			{
+				role: "model",
+				parts: [
+					{
+						text: "I understand. I will create structured summaries using bullet points with citations when analyzing pasted content. How can I help you today?",
+					},
+				],
+			},
+		];
 
-    if (chat.messages && Array.isArray(chat.messages)) {
-      for (const msg of chat.messages.slice(-18)) {
-        if (msg.role && msg.content && typeof msg.content === "string") {
-          let messageContent = msg.content;
+		if (chat.messages && Array.isArray(chat.messages)) {
+			for (const msg of chat.messages.slice(-18)) {
+				if (msg.role && msg.content && typeof msg.content === "string") {
+					let messageContent = msg.content;
 
-          if (msg.role === "user" && msg.pastedContent) {
-            messageContent = `Here is the content to analyze:\n\n${msg.pastedContent}\n\n${msg.content}`;
-          }
+					if (msg.role === "user" && msg.pastedContent) {
+						messageContent = `Here is the content to analyze:\n\n${msg.pastedContent}\n\n${msg.content}`;
+					}
 
-          conversationHistory.push({
-            role: msg.role === "user" ? "user" : "model",
-            parts: [{ text: messageContent.substring(0, 8000) }],
-          });
-        }
-      }
-    }
+					conversationHistory.push({
+						role: msg.role === "user" ? "user" : "model",
+						parts: [{ text: messageContent.substring(0, 8000) }],
+					});
+				}
+			}
+		}
 
-    const chatSession = model.startChat({
-      history: conversationHistory,
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 4096,
-        candidateCount: 1,
-      },
-    });
+		const chatSession = model.startChat({
+			history: conversationHistory,
+			generationConfig: {
+				temperature: 0.7,
+				topK: 40,
+				topP: 0.95,
+				maxOutputTokens: 4096,
+				candidateCount: 1,
+			},
+		});
 
-    let fullResponse = "";
-    let chunkCount = 0;
+		let fullResponse = "";
+		let chunkCount = 0;
 
-    let aiMessage = message.content;
-    if (message.pastedContent) {
-      aiMessage = `Here is the content to analyze:\n\n${message.pastedContent}\n\n${message.content}${CITATION_PROMPT_ADDITION}`;
-    }
+		let aiMessage = message.content;
+		if (message.pastedContent) {
+			aiMessage = `Here is the content to analyze:\n\n${message.pastedContent}\n\n${message.content}${CITATION_PROMPT_ADDITION}`;
+		}
 
-    const result = await chatSession.sendMessageStream(
-      aiMessage.substring(0, 15000),
-    );
+		const result = await chatSession.sendMessageStream(
+			aiMessage.substring(0, 15000),
+		);
 
-    for await (const chunk of result.stream) {
-      const chunkText = chunk.text();
-      if (chunkText && chunkText.length > 0) {
-        fullResponse += chunkText;
-        chunkCount++;
+		for await (const chunk of result.stream) {
+			const chunkText = chunk.text();
+			if (chunkText && chunkText.length > 0) {
+				fullResponse += chunkText;
+				chunkCount++;
 
-        await aiChannel.publish("ai-chunk", {
-          type: "chunk",
-          text: chunkText,
-          chunkIndex: chunkCount,
-          chatId,
-          timestamp: new Date().toISOString(),
-        });
-      }
-    }
+				await aiChannel.publish("ai-chunk", {
+					type: "chunk",
+					text: chunkText,
+					chunkIndex: chunkCount,
+					chatId,
+					timestamp: new Date().toISOString(),
+				});
+			}
+		}
 
-    let processedResponse = {
-      content: fullResponse,
-      citations: [],
-      hasCitations: false,
-    };
-    if (message.pastedContent) {
-      processedResponse = processAIResponseWithCitations(
-        fullResponse,
-        message.pastedContent,
-      );
-    }
+		let processedResponse = {
+			content: fullResponse,
+			citations: [],
+			hasCitations: false,
+		};
+		if (message.pastedContent) {
+			processedResponse = processAIResponseWithCitations(
+				fullResponse,
+				message.pastedContent,
+			);
+		}
 
-    // Create the assistant message with unique ID
-    const assistantMessage = {
-      id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      role: "assistant",
-      content: fullResponse,
-      citations: processedResponse.hasCitations
-        ? processedResponse.citations
-        : undefined,
-      timestamp: new Date(),
-    };
+		// Create the assistant message with unique ID
+		const assistantMessage = {
+			id: `ai-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+			role: "assistant",
+			content: fullResponse,
+			citations: processedResponse.hasCitations
+				? processedResponse.citations
+				: undefined,
+			timestamp: new Date(),
+		};
 
-    await aiChannel.publish("ai-complete", {
-      type: "complete",
-      content: fullResponse,
-      citations: processedResponse.citations,
-      hasCitations: processedResponse.hasCitations,
-      messageId: assistantMessage.id,
-      totalChunks: chunkCount,
-      usage: rateLimitResult.usage,
-      chatId,
-      timestamp: new Date().toISOString(),
-    });
+		await aiChannel.publish("ai-complete", {
+			type: "complete",
+			content: fullResponse,
+			citations: processedResponse.citations,
+			hasCitations: processedResponse.hasCitations,
+			messageId: assistantMessage.id,
+			totalChunks: chunkCount,
+			usage: rateLimitResult.usage,
+			chatId,
+			timestamp: new Date().toISOString(),
+		});
 
-    await statusChannel.publish("ai-completed", {
-      type: "processing-completed",
-      chatId,
-      messageLength: processedResponse.content.length,
-      usage: rateLimitResult.usage,
-      timestamp: new Date().toISOString(),
-    });
+		await statusChannel.publish("ai-completed", {
+			type: "processing-completed",
+			chatId,
+			messageLength: processedResponse.content.length,
+			usage: rateLimitResult.usage,
+			timestamp: new Date().toISOString(),
+		});
 
-    await Chat.updateOne(
-      { chatId, userId: session.user.id },
-      { $push: { messages: assistantMessage } },
-    );
+		await Chat.updateOne(
+			{ chatId, userId: session.user.id },
+			{ $push: { messages: assistantMessage } },
+		);
 
-    return NextResponse.json({
-      success: true,
-      messageId: assistantMessage.id,
-      chunkCount,
-      responseLength: fullResponse.length,
-      usage: rateLimitResult.usage,
-    });
-  } catch (error) {
-    console.error("=== AI processing error ===");
-    console.error("Error details:", error);
-    console.error("Error message:", error.message);
-    console.error("Error stack:", error.stack);
+		return NextResponse.json({
+			success: true,
+			messageId: assistantMessage.id,
+			chunkCount,
+			responseLength: fullResponse.length,
+			usage: rateLimitResult.usage,
+		});
+	} catch (error) {
+		console.error("=== AI processing error ===");
+		console.error("Error details:", error);
+		console.error("Error message:", error.message);
+		console.error("Error stack:", error.stack);
 
-    let errorMessage = "Internal server error";
-    let statusCode = 500;
+		let errorMessage = "Internal server error";
+		let statusCode = 500;
 
-    if (
-      error.message?.includes("fetch failed") ||
-      error.code === "ECONNREFUSED"
-    ) {
-      errorMessage = "Connection error - this is common in development mode";
-      console.log(
-        "Detected fetch failed / connection error, likely undici issue",
-      );
-    } else if (error.message?.includes("GoogleGenerativeAI")) {
-      errorMessage = "AI service temporarily unavailable";
-      console.log("Google AI API error detected");
-    } else if (error.name === "AbortError") {
-      errorMessage = "Request timeout";
-      console.log("Request was aborted/timed out");
-    }
+		if (
+			error.message?.includes("fetch failed") ||
+			error.code === "ECONNREFUSED"
+		) {
+			errorMessage = "Connection error - this is common in development mode";
+			console.log(
+				"Detected fetch failed / connection error, likely undici issue",
+			);
+		} else if (error.message?.includes("GoogleGenerativeAI")) {
+			errorMessage = "AI service temporarily unavailable";
+			console.log("Google AI API error detected");
+		} else if (error.name === "AbortError") {
+			errorMessage = "Request timeout";
+			console.log("Request was aborted/timed out");
+		}
 
-    try {
-      if (process.env.ABLY_API_KEY) {
-        const ably = new Ably.Rest(process.env.ABLY_API_KEY);
-        const statusChannel = ably.channels.get(
-          `ai-status:${session?.user?.id}:${chatId}`,
-        );
-        await statusChannel.publish("ai-error", {
-          type: "processing-error",
-          error: errorMessage,
-          chatId,
-          timestamp: new Date().toISOString(),
-        });
-      }
-    } catch (ablyError) {
-      console.error("Failed to publish error status:", ablyError);
-    }
+		try {
+			if (process.env.ABLY_API_KEY) {
+				const ably = new Ably.Rest(process.env.ABLY_API_KEY);
+				const statusChannel = ably.channels.get(
+					`ai-status:${session?.user?.id}:${chatId}`,
+				);
+				await statusChannel.publish("ai-error", {
+					type: "processing-error",
+					error: errorMessage,
+					chatId,
+					timestamp: new Date().toISOString(),
+				});
+			}
+		} catch (ablyError) {
+			console.error("Failed to publish error status:", ablyError);
+		}
 
-    return NextResponse.json(
-      {
-        error: errorMessage,
-        details:
-          process.env.NODE_ENV === "development" ? error.message : undefined,
-      },
-      { status: statusCode },
-    );
-  }
+		return NextResponse.json(
+			{
+				error: errorMessage,
+				details:
+					process.env.NODE_ENV === "development" ? error.message : undefined,
+			},
+			{ status: statusCode },
+		);
+	}
 }
