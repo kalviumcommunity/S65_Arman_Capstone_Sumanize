@@ -1,3 +1,4 @@
+import { Analytics } from "@vercel/analytics/next"
 import "@/app/globals.css";
 import Providers from "@/components/providers/session-provider";
 import { funnelSans, geistMono, quattrocento } from "@/app/fonts";
@@ -22,6 +23,7 @@ export default function RootLayout({ children }) {
 			>
 				<Providers>{children}</Providers>
 				<Script src="https://checkout.razorpay.com/v1/checkout.js" />
+        <Analytics />
 			</body>
 		</html>
 	);
