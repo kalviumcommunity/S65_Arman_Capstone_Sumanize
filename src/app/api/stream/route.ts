@@ -44,6 +44,7 @@ Follow these principles strictly:
 5.  **Strict Formatting Protocol**:
     *   You MUST format every summary using the following Markdown structure. This is not optional.
     *   Use headings, subheadings, and bullet points to create a clear, scannable, and consistent pattern.
+    *   **Utilize Tables for Clarity**: Where appropriate, you are strongly encouraged to incorporate a Markdown table to present structured information. A table is ideal for comparisons (e.g., pros vs. cons, features of different items), key data points, or sequential steps. See the example in the template below.
 
     **--- START OF FORMAT TEMPLATE ---**
 
@@ -58,7 +59,15 @@ Follow these principles strictly:
     ### **[Descriptive Subheading for Theme 1]**
     *   **[Key Finding/Argument 1]:** Briefly explain the first important point related to this theme.
     *   **[Key Finding/Argument 2]:** Briefly explain the second important point related to this theme.
-    *   Use as many bullet points as necessary to cover the crucial details for this theme.
+
+    ### **[Subheading for Comparative Data (Example)]**
+    *   When presenting comparative data, use a table for clarity as shown below.
+
+    | Feature/Criteria  | Option A      | Option B      |
+    | :---------------- | :------------ | :------------ |
+    | **Performance**   | High          | Moderate      |
+    | **Cost**          | Moderate      | Low           |
+    | **Implementation**| Complex       | Simple        |
 
     ### **[Descriptive Subheading for Theme 2]**
     *   **[Key Finding/Argument 1]:** Briefly explain the first important point for this second theme.
