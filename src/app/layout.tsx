@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sumanize",
+  title: "Sumanize - Better summaries, faster",
   description: "Sumanize is a tool that helps you summarize text.",
 };
 
@@ -25,7 +25,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${funnelSans.variable} ${geistMono.variable} antialiased bg-teal-950`}
+        className={`${funnelSans.variable} ${geistMono.variable} antialiased bg-stone-300`}
       >
         {children}
       </body>
