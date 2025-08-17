@@ -6,6 +6,7 @@ import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
   Clipboard,
+  Check,
   ArrowsClockwise,
   PencilSimple,
   Plus,
@@ -15,14 +16,19 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   sourceText?: string;
+  onSelection: (selection: { text: string; rect: DOMRect | null }) => void;
+  onCursorPosition: (position: { x: number; y: number }) => void;
 }
 
 export default function ChatInput({
   onSend,
   isLoading,
   sourceText,
+  onSelection,
+  onCursorPosition,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
+  const [isCopied, setIsCopied] = useState(false);
 
   const handleSend = () => {
     if (message.trim()) {
@@ -50,34 +56,70 @@ export default function ChatInput({
               Paste your content below to get started
             </p>
           </div>
-          <div className="flex gap-4">
+          <div className="flex gap-1">
             <button
-              onClick={() => navigator.clipboard.writeText(sourceText || "")}
-              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+              onClick={async () => {
+                await navigator.clipboard.writeText(sourceText || "");
+                setIsCopied(true);
+                setTimeout(() => setIsCopied(false), 1500);
+              }}
+              className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
             >
-              <Clipboard size={20} />
+              <div className="relative w-5 h-5">
+                <Clipboard
+                  size={20}
+                  className={`absolute inset-0 transition-all duration-200 ${
+                    isCopied ? "opacity-0 scale-75" : "opacity-100 scale-100"
+                  }`}
+                />
+                <Check
+                  size={20}
+                  className={`absolute inset-0 transition-all duration-200 ${
+                    isCopied ? "opacity-100 scale-110" : "opacity-0 scale-75"
+                  }`}
+                />
+              </div>
             </button>
             <button
               onClick={() => {}}
-              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+              className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
             >
               <PencilSimple size={20} />
             </button>
             <button
               onClick={() => onSend("regenerate")}
-              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+              className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
             >
               <ArrowsClockwise size={20} />
             </button>
             <button
               onClick={() => onSend("regenerate")}
-              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+              className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
             >
               <Plus size={20} />
             </button>
           </div>
         </div>
-        <div className="relative flex-1 min-h-0 w-full overflow-y-auto">
+        <div
+          className="relative flex-1 min-h-0 w-full overflow-y-auto"
+          data-text-content
+          onMouseUp={(event) => {
+            const currentSelection = window.getSelection();
+            if (
+              currentSelection &&
+              currentSelection.toString() &&
+              currentSelection.rangeCount > 0
+            ) {
+              const range = currentSelection.getRangeAt(0);
+              // Capture cursor position
+              onCursorPosition({ x: event.clientX, y: event.clientY });
+              onSelection({
+                text: currentSelection.toString(),
+                rect: range.getBoundingClientRect(),
+              });
+            }
+          }}
+        >
           {sourceText ? (
             <div className="w-full text-stone-950 text-md p-8 prose prose-stone max-w-none">
               <Markdown
@@ -134,6 +176,9 @@ export default function ChatInput({
                       {children}
                     </td>
                   ),
+                  hr: ({ children }) => (
+                    <hr className="my-4 border-stone-300" />
+                  ),
                   code: ({
                     inline,
                     className,
@@ -159,9 +204,9 @@ export default function ChatInput({
                     };
                     return (
                       <div className="relative group my-2">
-                        <pre className="bg-stone-200 rounded-md px-3 py-2 overflow-x-auto whitespace-pre-wrap break-words">
+                        <pre className="bg-stone-200 rounded-md p-8 overflow-x-auto whitespace-pre-wrap break-words">
                           <code
-                            className="text-stone-950 text-xs font-mono leading-relaxed"
+                            className="text-stone-950 text-sm font-mono leading-relaxed"
                             {...props}
                           >
                             {children}

@@ -1,21 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ChatInput from "../left-panel/chat-input";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SummaryPreviewHolder from "./preview-holder";
 import {
   Clipboard,
+  Check,
   ThumbsUp,
   ThumbsDown,
-  Command,
+  GearSix,
+  Quotes,
 } from "@phosphor-icons/react";
+import FocusedSummarizer from "../focused-summarizer/focused-summarizer";
+
+interface Selection {
+  text: string;
+  rect: DOMRect | null;
+}
 
 export default function Summarizer() {
   const [sourceText, setSourceText] = useState("");
   const [summary, setSummary] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [selection, setSelection] = useState<Selection>({
+    text: "",
+    rect: null,
+  });
+  const [showModal, setShowModal] = useState(false);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+  const handleSelectionChange = (newSelection: Selection) => {
+    setSelection(newSelection);
+  };
+
+  const handleSummarizeClick = () => {
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setSelection({ text: "", rect: null });
+  };
+
+  // Global click handler to clear selection when clicking outside
+  useEffect(() => {
+    const handleGlobalClick = (event: MouseEvent) => {
+      const target = event.target as Element;
+
+      // Don't clear selection if clicking the summarize button
+      if (target.closest("[data-summarize-button]")) {
+        return;
+      }
+
+      // Clear selection if clicking outside of text areas
+      if (!target.closest("[data-text-content]")) {
+        setSelection({ text: "", rect: null });
+      }
+    };
+
+    document.addEventListener("click", handleGlobalClick);
+    return () => document.removeEventListener("click", handleGlobalClick);
+  }, []);
 
   const handleSummarize = async (message: string) => {
     setSourceText(message);
@@ -67,6 +115,8 @@ export default function Summarizer() {
               onSend={handleSummarize}
               isLoading={isLoading}
               sourceText={sourceText}
+              onSelection={handleSelectionChange}
+              onCursorPosition={setCursorPosition}
             />
           </div>
         </div>
@@ -83,36 +133,74 @@ export default function Summarizer() {
                       Your summarized content will appear here
                     </p>
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-1">
                     <button
-                      onClick={() =>
-                        navigator.clipboard.writeText(summary || "")
-                      }
-                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(summary || "");
+                        setIsCopied(true);
+                        setTimeout(() => setIsCopied(false), 1500);
+                      }}
+                      className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
                     >
-                      <Clipboard size={20} />
+                      <div className="relative w-5 h-5">
+                        <Clipboard
+                          size={20}
+                          className={`absolute inset-0 transition-all duration-200 ${
+                            isCopied
+                              ? "opacity-0 scale-75"
+                              : "opacity-100 scale-100"
+                          }`}
+                        />
+                        <Check
+                          size={20}
+                          className={`absolute inset-0 transition-all duration-200 ${
+                            isCopied
+                              ? "opacity-100 scale-110"
+                              : "opacity-0 scale-75"
+                          }`}
+                        />
+                      </div>
                     </button>
                     <button
                       onClick={() => {}}
-                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                      className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
                     >
                       <ThumbsUp size={20} />
                     </button>
                     <button
                       onClick={() => setSummary("")}
-                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                      className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
                     >
                       <ThumbsDown size={20} />
                     </button>
                     <button
                       onClick={() => setSummary("")}
-                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                      className="text-sm p-1.5 hover:bg-stone-400/50 text-stone-950 rounded-md transition-all duration-200 relative cursor-pointer"
                     >
-                      <Command size={20} />
+                      <GearSix size={20} />
                     </button>
                   </div>
                 </div>
-                <div className="relative flex-1 min-h-0 w-full overflow-y-auto p-8">
+                <div
+                  className="relative flex-1 min-h-0 w-full overflow-y-auto p-8"
+                  data-text-content
+                  onMouseUp={(event) => {
+                    const currentSelection = window.getSelection();
+                    if (
+                      currentSelection &&
+                      currentSelection.toString() &&
+                      currentSelection.rangeCount > 0
+                    ) {
+                      const range = currentSelection.getRangeAt(0);
+                      // Capture cursor position
+                      setCursorPosition({ x: event.clientX, y: event.clientY });
+                      handleSelectionChange({
+                        text: currentSelection.toString(),
+                        rect: range.getBoundingClientRect(),
+                      });
+                    }
+                  }}
+                >
                   {!summary ? (
                     <SummaryPreviewHolder />
                   ) : (
@@ -235,6 +323,30 @@ export default function Summarizer() {
           </div>
         </div>
       </div>
+
+      {/* Summarize Button */}
+      {selection.text && (
+        <button
+          data-summarize-button
+          onClick={handleSummarizeClick}
+          className="fixed z-50 px-3 py-1.5 text-sm font-medium text-stone-950 bg-stone-900 border border-stone-700 rounded-xl hover:bg-stone-800 transition-colors duration-200 cursor-pointer"
+          style={{
+            top: cursorPosition.y + 10,
+            left: cursorPosition.x + 10,
+          }}
+        >
+          <Quotes size={20} weight="fill" className="text-stone-300" />
+        </button>
+      )}
+
+      {/* Focused Summary Modal */}
+      {showModal && selection.text && (
+        <FocusedSummarizer
+          selection={selection}
+          onClose={handleCloseModal}
+          onSummarize={() => {}}
+        />
+      )}
     </div>
   );
 }
