@@ -1,6 +1,6 @@
 import Summarizer from "@/components/summarizer/summarizer";
 
-export default function Page() {
+export default function Summarize() {
   return (
     <>
       <main>

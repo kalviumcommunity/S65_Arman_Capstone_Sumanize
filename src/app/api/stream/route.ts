@@ -1,6 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 import { NextRequest, NextResponse } from "next/server";
 
+interface Part {
+  thought?: unknown;
+  text?: string;
+}
+
+interface Content {
+  parts?: Part[];
+}
+
+interface Candidate {
+  content?: Content;
+}
+
+interface StreamChunk {
+  text?: string;
+  candidates?: Candidate[];
+}
+
 export async function POST(req: NextRequest) {
   const { message, model: modelType = "gemini-2.5-flash" } = await req.json();
 
@@ -97,7 +115,8 @@ Follow these principles strictly:
         });
 
         for await (const chunk of responseIterator) {
-          const text = (chunk as any)?.text;
+          const streamChunk = chunk as StreamChunk;
+          const text = streamChunk?.text;
           if (typeof text === "string" && text.length > 0) {
             controller.enqueue(
               encoder.encode(
@@ -106,7 +125,7 @@ Follow these principles strictly:
             );
           }
 
-          const candidates = (chunk as any)?.candidates;
+          const candidates = streamChunk?.candidates;
           if (Array.isArray(candidates)) {
             for (const c of candidates) {
               const parts = c?.content?.parts;
@@ -128,11 +147,11 @@ Follow these principles strictly:
             }
           }
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error("Gemini API error:", error);
         const errorMessage = JSON.stringify({
           error: "Stream failed",
-          details: error.message || String(error),
+          details: error instanceof Error ? error.message : String(error),
         });
         controller.enqueue(encoder.encode(`data: ${errorMessage}\n\n`));
       } finally {

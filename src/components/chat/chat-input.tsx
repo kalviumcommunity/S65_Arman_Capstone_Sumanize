@@ -2,20 +2,6 @@
 
 import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "@/components/ui/tooltip";
-import {
-  ArrowElbowDownLeft,
-  Brain,
-  ArrowsClockwise,
-  DotsThreeOutline,
-  CursorClick,
-  CornersOut,
-} from "@phosphor-icons/react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -23,16 +9,12 @@ interface ChatInputProps {
   onSend: (message: string) => void;
   isLoading: boolean;
   sourceText?: string;
-  onToggleCollapse: () => void;
-  isCollapsed: boolean;
 }
 
 export default function ChatInput({
   onSend,
   isLoading,
   sourceText,
-  onToggleCollapse,
-  isCollapsed,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
 
@@ -118,30 +100,35 @@ export default function ChatInput({
                       {children}
                     </td>
                   ),
-                  code: (props) => {
-                    const { inline, children, ...rest } = props as any;
-
+                  code: ({
+                    inline,
+                    className,
+                    children,
+                    ...props
+                  }: React.HTMLAttributes<HTMLElement> & {
+                    inline?: boolean;
+                    className?: string;
+                    children?: React.ReactNode;
+                  }) => {
                     if (inline) {
                       return (
                         <code
                           className="px-1.5 py-1 rounded-md bg-stone-900 text-stone-200 text-sm font-mono inline-block"
-                          {...rest}
+                          {...props}
                         >
                           {children}
                         </code>
                       );
                     }
-
                     const handleCopy = () => {
                       navigator.clipboard.writeText(String(children).trim());
                     };
-
                     return (
                       <div className="relative group my-2">
                         <pre className="bg-stone-200 rounded-md px-3 py-2 overflow-x-auto whitespace-pre-wrap break-words">
                           <code
                             className="text-stone-950 text-xs font-mono leading-relaxed"
-                            {...rest}
+                            {...props}
                           >
                             {children}
                           </code>
@@ -161,92 +148,16 @@ export default function ChatInput({
               </Markdown>
             </div>
           ) : (
-            <>
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder=""
-                className="relative z-20 w-full h-full text-stone-950 bg-transparent border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-md shadow-none"
-                disabled={isLoading}
-              />
-            </>
+            <Textarea
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder=""
+              className="relative z-20 w-full h-full text-stone-950 bg-transparent border-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0 resize-none text-md shadow-none"
+              disabled={isLoading}
+            />
           )}
         </div>
-        {/* <div className="mt-auto flex justify-between items-center rounded-xl bg-neutral-200 p-4">
-          <div className="flex gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  className="px-1.5 text-sm bg-gradient-to-b text-neutral-950 from-neutral-100 to-neutral-300 hover:bg-neutral-200 border-1 border-neutral-400 cursor-pointer active:scale-95 transition-all duration-200"
-                  disabled={isLoading}
-                  onClick={onToggleCollapse}
-                >
-                  <CornersOut size={16} />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>Collapse</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  className="px-1.5 text-sm bg-gradient-to-b text-neutral-950 from-neutral-100 to-neutral-300 hover:bg-neutral-200 border-1 border-neutral-400 cursor-pointer active:scale-95 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  <Brain size={16} />
-                  Reason
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>Switch to reasoning mode</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  className="text-sm bg-gradient-to-b text-neutral-950 from-neutral-100 to-neutral-300 hover:bg-neutral-200 border-1 border-neutral-400 cursor-pointer active:scale-95 transition-all duration-200"
-                  disabled={isLoading}
-                >
-                  <ArrowsClockwise size={16} />
-                  Regenerate
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>Regenerate another response</p>
-              </TooltipContent>
-            </Tooltip>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  className="text-sm bg-transparent text-neutral-950 hover:bg-transparent cursor-pointer active:scale-95 transition-all duration-200 shadow-none"
-                  disabled={isLoading}
-                >
-                  <DotsThreeOutline size={16} weight="fill" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                <p>More options</p>
-              </TooltipContent>
-            </Tooltip>
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-sm bg-transparent hover:bg-transparent cursor-pointer active:scale-95 transition-all duration-200 shadow-none text-neutral-950"
-            onClick={handleSend}
-            disabled={isLoading || !message.trim()}
-          >
-            Enter to Send
-            <ArrowElbowDownLeft size={16} weight="fill" />
-          </Button>
-        </div> */}
       </div>
     </div>
   );

@@ -34,11 +34,11 @@ export async function POST(req: NextRequest) {
     const title: string =
       (response.text as string | undefined)?.trim() || "Untitled";
     return NextResponse.json({ title });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
       {
         error: "Failed to generate title",
-        details: error?.message ?? String(error),
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     );
