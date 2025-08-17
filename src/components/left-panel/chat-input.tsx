@@ -4,6 +4,12 @@ import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import {
+  Clipboard,
+  ArrowsClockwise,
+  PencilSimple,
+  Plus,
+} from "@phosphor-icons/react";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -35,13 +41,41 @@ export default function ChatInput({
   return (
     <div className="w-full h-full border border-stone-700 rounded-3xl p-1.5">
       <div className="h-full min-h-0 rounded-2xl flex flex-col p-1">
-        <div className="px-8 py-2 text-left bg-gradient-to-b from-stone-300 to-transparent">
-          <h2 className="text-lg font-semibold text-stone-950">
-            Source Content
-          </h2>
-          <p className="text-sm text-stone-600">
-            Paste your content below to get started
-          </p>
+        <div className="px-8 py-2 text-left bg-gradient-to-b from-stone-300 to-transparent flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-stone-950">
+              Source Content
+            </h2>
+            <p className="text-sm text-stone-600">
+              Paste your content below to get started
+            </p>
+          </div>
+          <div className="flex gap-4">
+            <button
+              onClick={() => navigator.clipboard.writeText(sourceText || "")}
+              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+            >
+              <Clipboard size={20} />
+            </button>
+            <button
+              onClick={() => {}}
+              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+            >
+              <PencilSimple size={20} />
+            </button>
+            <button
+              onClick={() => onSend("regenerate")}
+              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+            >
+              <ArrowsClockwise size={20} />
+            </button>
+            <button
+              onClick={() => onSend("regenerate")}
+              className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+            >
+              <Plus size={20} />
+            </button>
+          </div>
         </div>
         <div className="relative flex-1 min-h-0 w-full overflow-y-auto">
           {sourceText ? (

@@ -1,10 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import ChatInput from "../chat/chat-input";
+import ChatInput from "../left-panel/chat-input";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import SummaryPreviewHolder from "./preview-holder";
+import {
+  Clipboard,
+  ThumbsUp,
+  ThumbsDown,
+  Command,
+} from "@phosphor-icons/react";
 
 export default function Summarizer() {
   const [sourceText, setSourceText] = useState("");
@@ -68,13 +74,43 @@ export default function Summarizer() {
           <div className="flex-1 min-h-0">
             <div className="w-full h-full border border-stone-700 rounded-3xl p-1.5">
               <div className="h-full min-h-0 rounded-2xl flex flex-col p-1.5 overflow-hidden">
-                <div className="px-8 py-2 text-left">
-                  <h2 className="text-lg font-semibold text-stone-800">
-                    Summarized Content
-                  </h2>
-                  <p className="text-sm text-stone-500">
-                    Your summarized content will appear here
-                  </p>
+                <div className="px-8 py-2 text-left flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-stone-800">
+                      Summarized Content
+                    </h2>
+                    <p className="text-sm text-stone-500">
+                      Your summarized content will appear here
+                    </p>
+                  </div>
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() =>
+                        navigator.clipboard.writeText(summary || "")
+                      }
+                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                    >
+                      <Clipboard size={20} />
+                    </button>
+                    <button
+                      onClick={() => {}}
+                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                    >
+                      <ThumbsUp size={20} />
+                    </button>
+                    <button
+                      onClick={() => setSummary("")}
+                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                    >
+                      <ThumbsDown size={20} />
+                    </button>
+                    <button
+                      onClick={() => setSummary("")}
+                      className="text-sm hover:bg-stone-300 text-stone-950 rounded-md transition-colors"
+                    >
+                      <Command size={20} />
+                    </button>
+                  </div>
                 </div>
                 <div className="relative flex-1 min-h-0 w-full overflow-y-auto p-8">
                   {!summary ? (
