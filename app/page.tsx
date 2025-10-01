@@ -3,7 +3,7 @@ import Summarizer from "@/components/summarizer";
 export default function Page() {
   return (
     <>
-      <main className="bg-[#86B0BD]">
+      <main className="bg-[#5C5470] font-mono">
         <Summarizer />
       </main>
     </>
