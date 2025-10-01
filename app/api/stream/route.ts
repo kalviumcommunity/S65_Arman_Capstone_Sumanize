@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
+// import { getServerSession } from "next-auth"; // Temporarily disabled for auth bypass
 
 interface Part {
   thought?: unknown;
@@ -20,6 +22,16 @@ interface StreamChunk {
 }
 
 export async function POST(req: NextRequest) {
+  // Temporarily disable authentication for testing
+  // const session = await getServerSession();
+  //
+  // if (!session || !session.user) {
+  //   return NextResponse.json(
+  //     { error: "Unauthorized. Please sign in to use this feature." },
+  //     { status: 401 }
+  //   );
+  // }
+
   const { message, model: modelType = "gemini-2.5-flash" } = await req.json();
 
   if (!process.env.GEMINI_API_KEY) {
