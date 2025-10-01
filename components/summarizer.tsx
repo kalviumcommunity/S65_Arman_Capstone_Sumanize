@@ -17,7 +17,7 @@ export default function Summarizer() {
   const [summary, setSummary] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement | null>(null);
-  
+
   // Temporarily disable auth for testing
   const isAuthenticated = true;
 
@@ -32,7 +32,8 @@ export default function Summarizer() {
     setIsLoading(true);
     setSummary("");
 
-    const combinedMessage = `Pasted Texts (count: ${pastedItems.length}):\n` +
+    const combinedMessage =
+      `Pasted Texts (count: ${pastedItems.length}):\n` +
       pastedItems.map((t, i) => `[#${i + 1}]\n${t}\n`).join("\n") +
       `\nInstruction:\n${prompt}`;
 
@@ -76,23 +77,29 @@ export default function Summarizer() {
     setIsLoading(false);
   }, [pastedItems, prompt, router]);
 
-  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLTextAreaElement>) => {
-    const text = e.clipboardData.getData("text");
-    if (!text.trim()) return;
-    e.preventDefault();
-    setPastedItems(prev => [...prev, text.trim()]);
-    setExpandedIndex(pastedItems.length); // expand the newly added item
-  }, [pastedItems.length]);
-
-  const handlePromptKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
+  const handlePaste = useCallback(
+    (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+      const text = e.clipboardData.getData("text");
+      if (!text.trim()) return;
       e.preventDefault();
-      handleSummarize();
-    }
-  }, [handleSummarize]);
+      setPastedItems((prev) => [...prev, text.trim()]);
+      setExpandedIndex(pastedItems.length); // expand the newly added item
+    },
+    [pastedItems.length]
+  );
+
+  const handlePromptKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSummarize();
+      }
+    },
+    [handleSummarize]
+  );
 
   const toggleExpand = (idx: number) => {
-    setExpandedIndex(prev => prev === idx ? null : idx);
+    setExpandedIndex((prev) => (prev === idx ? null : idx));
   };
 
   const markdownComponents = useMemo(
@@ -119,15 +126,21 @@ export default function Summarizer() {
         <p className="leading-relaxed mb-2">{children}</p>
       ),
       table: ({ children }: { children: React.ReactNode }) => (
-        <div className="my-4 overflow-x-auto border border-stone-500 rounded-lg">
-          <table className="w-full text-sm text-left text-stone-950">{children}</table>
+        <div className="my-4 overflow-x-auto border border-stone-500 ">
+          <table className="w-full text-sm text-left text-stone-950">
+            {children}
+          </table>
         </div>
       ),
       thead: ({ children }: { children: React.ReactNode }) => (
-        <thead className="bg-stone-400 border-b border-stone-500">{children}</thead>
+        <thead className="bg-stone-400 border-b border-stone-500">
+          {children}
+        </thead>
       ),
       tr: ({ children }: { children: React.ReactNode }) => (
-        <tr className="bg-stone-200 border-b border-stone-500 last:border-b-0 hover:bg-stone-100 transition-colors duration-200">{children}</tr>
+        <tr className="bg-stone-200 border-b border-stone-500 last:border-b-0 hover:bg-stone-100 transition-colors duration-200">
+          {children}
+        </tr>
       ),
       th: ({ children }: { children: React.ReactNode }) => (
         <th scope="col" className="px-4 py-3 font-semibold text-stone-950">
@@ -150,7 +163,7 @@ export default function Summarizer() {
         if (inline) {
           return (
             <code
-              className="px-1.5 py-1 rounded-md bg-stone-900 text-stone-200 text-sm font-mono inline-block"
+              className="px-1.5 py-1 bg-[#FFF1F1] text-black text-sm font-mono inline-block"
               {...props}
             >
               {children}
@@ -159,8 +172,11 @@ export default function Summarizer() {
         }
         return (
           <div className="relative group my-2">
-            <pre className="bg-stone-900 rounded-md overflow-x-auto whitespace-pre-wrap break-words">
-              <code className="text-stone-950 text-xs font-mono leading-relaxed" {...props}>
+            <pre className="bg-[#FFF1F1] overflow-x-auto whitespace-pre-wrap break-words">
+              <code
+                className="text-[#fff1f1] text-xs font-mono leading-relaxed"
+                {...props}
+              >
                 {children}
               </code>
             </pre>
@@ -168,17 +184,17 @@ export default function Summarizer() {
         );
       },
     }),
-    [],
+    []
   );
 
   return (
-    <div className="min-h-screen w-full flex flex-col">
+    <div className="min-h-screen w-full flex flex-col ">
       {/* Header with user menu */}
       <header className="w-full px-4 py-4 flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-stone-900">Sumanize</h1>
-        <div className="flex items-center gap-3">
-          {/* Temporarily disable auth UI for testing */}
-          {/* {isAuthenticated ? (
+        {/* <h1 className="text-2xl font-bold text-stone-900">Sumanize</h1> */}
+        {/* <div className="flex items-center gap-3">
+          Temporarily disable auth UI for testing
+          {isAuthenticated ? (
             <>
               <div className="flex items-center gap-2 px-3 py-2 bg-[#FFF0DD] border-2 border-[#B8C4A9] rounded-lg">
                 <User size={20} weight="fill" className="text-[#6FA4AF]" />
@@ -204,63 +220,79 @@ export default function Summarizer() {
               <SignIn size={20} weight="bold" />
               <span className="text-sm font-medium">Sign In</span>
             </button>
-          )} */}
-        </div>
-      </header>
-      
-      {/* Main content */}
-      <div className="flex-1 w-full flex items-center justify-center px-4 py-10">
-        <div className="w-full max-w-4xl flex flex-col gap-8">
-        <div>
-          {pastedItems.length > 0 && (
-            <div className="flex flex-wrap gap-3 mb-6">
-              {pastedItems.map((item, idx) => {
-                const isExpanded = expandedIndex === idx;
-                const preview = item.replace(/\s+/g, ' ').slice(0, 160) + (item.length > 160 ? '…' : '');
-                return (
-                  <button
-                    type="button"
-                    key={`pasted-item-${idx}-${item.slice(0, 20)}`}
-                    className={`relative group border-4 border-[#B8C4A9] bg-[#FFF0DD] rounded-lg p-4 transition-all duration-200 text-left ${isExpanded ? 'w-full' : 'w-full sm:w-[48%] lg:w-[32%]'}`}
-                    onClick={() => toggleExpand(idx)}
-                    title={isExpanded ? 'Click to collapse' : 'Click to expand'}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 mb-1">
-                          <span className="text-sm font-semibold tracking-wide uppercase text-stone-500">Text-{idx + 1}</span>
-                        </div>
-                        {!isExpanded && (
-                          <div
-                            className="text-sm leading-snug text-stone-700 line-clamp-3 break-words"
-                          >
-                            {preview}
-                          </div>
-                        )}
-                        {isExpanded && (
-                          <div className="mt-1 text-sm leading-relaxed text-stone-800 whitespace-pre-wrap break-words max-h-72 overflow-y-auto pr-1">
-                            {item}
-                          </div>
-                        )}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => { e.stopPropagation(); setPastedItems(prev => prev.filter((_, i) => i !== idx)); if (expandedIndex === idx) setExpandedIndex(null); }}
-                        className="text-xl cursor-pointer"
-                        aria-label={`Remove pasted text ${idx + 1}`}
-                      >
-                        <XCircle size={20} weight="fill" className="text-[#6FA4AF]"/>
-                      </button>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
           )}
+        </div> */}
+      </header>
 
-          <div className="relative">
-            {/* Temporarily disable auth overlay for testing */}
-            {/* {!isAuthenticated && (
+      {/* Main content */}
+      <div className="flex-1  w-full flex items-center justify-center px-4 py-10">
+        <div className="w-full max-w-4xl flex flex-col gap-8">
+          <div>
+            {pastedItems.length > 0 && (
+              <div className="flex flex-wrap gap-3 mb-6">
+                {pastedItems.map((item, idx) => {
+                  const isExpanded = expandedIndex === idx;
+                  const preview =
+                    item.replace(/\s+/g, " ").slice(0, 160) +
+                    (item.length > 160 ? "…" : "");
+                  return (
+                    <button
+                      type="button"
+                      key={`pasted-item-${idx}-${item.slice(0, 20)}`}
+                      className={`relative group border-4 bg-[#B9B4C7] border-[#352F44] p-4 transition-all duration-200 text-left ${
+                        isExpanded ? "w-full" : "w-full sm:w-[48%] lg:w-[32%]"
+                      }`}
+                      onClick={() => toggleExpand(idx)}
+                      title={
+                        isExpanded ? "Click to collapse" : "Click to expand"
+                      }
+                    >
+                      <div className=" flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 mb-1">
+                            <span className="text-sm font-semibold tracking-wide uppercase text-black">
+                              Text-{idx + 1}
+                            </span>
+                          </div>
+                          {!isExpanded && (
+                            <div className="text-sm leading-snug text-[#352F44] line-clamp-3 break-words">
+                              {preview}
+                            </div>
+                          )}
+                          {isExpanded && (
+                            <div className="mt-1 text-sm leading-relaxed text-stone-800 whitespace-pre-wrap break-words max-h-72 overflow-y-auto pr-1">
+                              {item}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPastedItems((prev) =>
+                              prev.filter((_, i) => i !== idx)
+                            );
+                            if (expandedIndex === idx) setExpandedIndex(null);
+                          }}
+                          className="text-xl cursor-pointer "
+                          aria-label={`Remove pasted text ${idx + 1}`}
+                        >
+                          <XCircle
+                            size={20}
+                            weight="fill"
+                            className="text-[#FAF0E6]"
+                          />
+                        </button>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="relative  ">
+              {/* Temporarily disable auth overlay for testing */}
+              {/* {!isAuthenticated && (
               <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
                 <div className="text-center">
                   <p className="text-white text-lg font-semibold mb-2">Sign in to use Sumanize</p>
@@ -274,52 +306,65 @@ export default function Summarizer() {
                 </div>
               </div>
             )} */}
-            <textarea
-              ref={promptRef}
-              onPaste={handlePaste}
-              value={prompt}
-              onChange={e => setPrompt(e.target.value)}
-              onKeyDown={handlePromptKeyDown}
-              placeholder="Paste your text here and type your instruction"
-              className="w-full min-h-40 bg-[#FFF0DD] rounded-xl text-neutral-950 placeholder-neutral-950 border-4 border-[#B8C4A9] focus:outline-none focus:ring-0 p-4 text-base disabled:opacity-60 disabled:cursor-not-allowed"
-              disabled={isLoading}
-            />
-            <button
-              type="button"
-              onClick={handleSummarize}
-              disabled={isLoading || !prompt.trim() || pastedItems.length === 0}
-              className="absolute right-4 bottom-4 rounded-lg transition-colors text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              <ArrowCircleRight size={32} weight="fill" className="text-[#6FA4AF]"/>
-            </button>
+              <textarea
+                ref={promptRef}
+                onPaste={handlePaste}
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                onKeyDown={handlePromptKeyDown}
+                placeholder="Paste your text here and type your instruction"
+                className="w-full min-h-40 bg-[#B9B4C7]  text-neutral-950 placeholder-neutral-950 border-4 border-[#352F44] focus:outline-none focus:ring-0 p-4 text-base disabled:cursor-not-allowed"
+                disabled={isLoading}
+              />
+              {/* <button
+                type="button"
+                onClick={handleSummarize}
+                disabled={
+                  isLoading || !prompt.trim() || pastedItems.length === 0
+                }
+                className="absolute right-4 bottom-4 transition-colors text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ArrowCircleRight
+                  size={32}
+                  weight="fill"
+                  className="text-[#FAF0E6]"
+                />
+              </button> */}
+            </div>
           </div>
-        </div>
 
-        {(isLoading || summary) && (
-          <div className="w-full border border-stone-400 rounded-2xl bg-stone-200">
-            <div className="px-6 py-4 border-b border-stone-400 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-stone-900">Summary</h2>
-                <p className="text-sm text-stone-600">Output generated from your pasted texts</p>
+          {(isLoading || summary) && (
+            <div className="w-full border-2 border-stone-400  bg-stone-200">
+              <div className="px-6 py-4 border-b border-stone-400 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-stone-900">
+                    Summary
+                  </h2>
+                  <p className="text-sm text-stone-600">
+                    Output generated from your pasted texts
+                  </p>
+                </div>
+              </div>
+              <div className="p-6">
+                {summary ? (
+                  <div className="w-full text-stone-950 text-md prose prose-stone max-w-none">
+                    <Markdown
+                      remarkPlugins={[remarkGfm]}
+                      components={markdownComponents}
+                    >
+                      {summary}
+                    </Markdown>
+                  </div>
+                ) : (
+                  <div className="text-stone-700 text-sm">
+                    Streaming summary…
+                  </div>
+                )}
               </div>
             </div>
-            <div className="p-6">
-              {summary ? (
-                <div className="w-full text-stone-950 text-md prose prose-stone max-w-none">
-                  <Markdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                    {summary}
-                  </Markdown>
-                </div>
-              ) : (
-                <div className="text-stone-700 text-sm">Streaming summary…</div>
-              )}
-            </div>
-          </div>
-        )}
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-
