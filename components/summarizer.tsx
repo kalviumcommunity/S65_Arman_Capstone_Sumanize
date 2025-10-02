@@ -3,13 +3,9 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import Markdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { XCircle, ArrowCircleRight } from "@phosphor-icons/react";
-// import { SignIn, SignOut, User } from "@phosphor-icons/react"; // Temporarily disabled for auth bypass
-// import { useSession, signOut } from "next-auth/react"; // Temporarily disabled for auth bypass
 import { useRouter } from "next/navigation";
 
 export default function Summarizer() {
-  // const { data: session, status } = useSession(); // Temporarily disabled for auth bypass
   const router = useRouter();
   const [pastedItems, setPastedItems] = useState<string[]>([]);
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
@@ -18,16 +14,7 @@ export default function Summarizer() {
   const [isLoading, setIsLoading] = useState(false);
   const promptRef = useRef<HTMLTextAreaElement | null>(null);
 
-  // Temporarily disable auth for testing
-  const isAuthenticated = true;
-
   const handleSummarize = useCallback(async () => {
-    // Temporarily disable auth check for testing
-    // if (!isAuthenticated) {
-    //   router.push("/auth");
-    //   return;
-    // }
-
     if (!pastedItems.length || !prompt.trim()) return;
     setIsLoading(true);
     setSummary("");
@@ -83,9 +70,9 @@ export default function Summarizer() {
       if (!text.trim()) return;
       e.preventDefault();
       setPastedItems((prev) => [...prev, text.trim()]);
-      setExpandedIndex(pastedItems.length); // expand the newly added item
+      setExpandedIndex(pastedItems.length);
     },
-    [pastedItems.length]
+    [pastedItems.length],
   );
 
   const handlePromptKeyDown = useCallback(
@@ -95,7 +82,7 @@ export default function Summarizer() {
         handleSummarize();
       }
     },
-    [handleSummarize]
+    [handleSummarize],
   );
 
   const toggleExpand = (idx: number) => {
@@ -184,48 +171,12 @@ export default function Summarizer() {
         );
       },
     }),
-    []
+    [],
   );
 
   return (
     <div className="min-h-screen w-full flex flex-col ">
-      {/* Header with user menu */}
-      <header className="w-full px-4 py-4 flex justify-between items-center">
-        {/* <h1 className="text-2xl font-bold text-stone-900">Sumanize</h1> */}
-        {/* <div className="flex items-center gap-3">
-          Temporarily disable auth UI for testing
-          {isAuthenticated ? (
-            <>
-              <div className="flex items-center gap-2 px-3 py-2 bg-[#FFF0DD] border-2 border-[#B8C4A9] rounded-lg">
-                <User size={20} weight="fill" className="text-[#6FA4AF]" />
-                <span className="text-sm font-medium text-stone-900">
-                  {session?.user?.name || session?.user?.email}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => signOut({ callbackUrl: "/auth" })}
-                className="flex items-center gap-2 px-4 py-2 bg-[#6FA4AF] text-white rounded-lg hover:bg-[#5a8a94] transition-colors"
-              >
-                <SignOut size={20} weight="bold" />
-                <span className="text-sm font-medium">Sign Out</span>
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              onClick={() => router.push("/auth")}
-              className="flex items-center gap-2 px-4 py-2 bg-[#6FA4AF] text-white rounded-lg hover:bg-[#5a8a94] transition-colors"
-            >
-              <SignIn size={20} weight="bold" />
-              <span className="text-sm font-medium">Sign In</span>
-            </button>
-          )}
-        </div> */}
-      </header>
-
-      {/* Main content */}
-      <div className="flex-1  w-full flex items-center justify-center px-4 py-10">
+      <div className="flex-1 w-full flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-4xl flex flex-col gap-8">
           <div>
             {pastedItems.length > 0 && (
@@ -239,13 +190,10 @@ export default function Summarizer() {
                     <button
                       type="button"
                       key={`pasted-item-${idx}-${item.slice(0, 20)}`}
-                      className={`relative group border-4 bg-[#B9B4C7] border-[#352F44] p-4 transition-all duration-200 text-left ${
+                      className={`relative group border-2 bg-[#B9B4C7] rounded-sm border-[#352F44] p-4 transition-all duration-200 text-left ${
                         isExpanded ? "w-full" : "w-full sm:w-[48%] lg:w-[32%]"
                       }`}
                       onClick={() => toggleExpand(idx)}
-                      title={
-                        isExpanded ? "Click to collapse" : "Click to expand"
-                      }
                     >
                       <div className=" flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
@@ -259,30 +207,7 @@ export default function Summarizer() {
                               {preview}
                             </div>
                           )}
-                          {isExpanded && (
-                            <div className="mt-1 text-sm leading-relaxed text-stone-800 whitespace-pre-wrap break-words max-h-72 overflow-y-auto pr-1">
-                              {item}
-                            </div>
-                          )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setPastedItems((prev) =>
-                              prev.filter((_, i) => i !== idx)
-                            );
-                            if (expandedIndex === idx) setExpandedIndex(null);
-                          }}
-                          className="text-xl cursor-pointer "
-                          aria-label={`Remove pasted text ${idx + 1}`}
-                        >
-                          <XCircle
-                            size={20}
-                            weight="fill"
-                            className="text-[#FAF0E6]"
-                          />
-                        </button>
                       </div>
                     </button>
                   );
@@ -290,22 +215,7 @@ export default function Summarizer() {
               </div>
             )}
 
-            <div className="relative  ">
-              {/* Temporarily disable auth overlay for testing */}
-              {/* {!isAuthenticated && (
-              <div className="absolute inset-0 bg-stone-900/50 backdrop-blur-sm rounded-xl flex items-center justify-center z-10">
-                <div className="text-center">
-                  <p className="text-white text-lg font-semibold mb-2">Sign in to use Sumanize</p>
-                  <button
-                    type="button"
-                    onClick={() => router.push("/auth")}
-                    className="px-6 py-2 bg-[#6FA4AF] text-white rounded-lg hover:bg-[#5a8a94] transition-colors font-medium"
-                  >
-                    Sign In
-                  </button>
-                </div>
-              </div>
-            )} */}
+            <div className="relative ">
               <textarea
                 ref={promptRef}
                 onPaste={handlePaste}
@@ -313,41 +223,17 @@ export default function Summarizer() {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handlePromptKeyDown}
                 placeholder="Paste your text here and type your instruction"
-                className="w-full min-h-40 bg-[#B9B4C7]  text-neutral-950 placeholder-neutral-950 border-4 border-[#352F44] focus:outline-none focus:ring-0 p-4 text-base disabled:cursor-not-allowed"
+                className="w-full min-h-full bg-[#B9B4C7] text-[#352F44] placeholder-[#352F44] border-2 border-[#352F44] rounded-sm focus:outline-none focus:ring-0 p-4 text-base disabled:cursor-not-allowed"
                 disabled={isLoading}
               />
-              {/* <button
-                type="button"
-                onClick={handleSummarize}
-                disabled={
-                  isLoading || !prompt.trim() || pastedItems.length === 0
-                }
-                className="absolute right-4 bottom-4 transition-colors text-sm font-medium cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <ArrowCircleRight
-                  size={32}
-                  weight="fill"
-                  className="text-[#FAF0E6]"
-                />
-              </button> */}
             </div>
           </div>
 
           {(isLoading || summary) && (
-            <div className="w-full border-2 border-stone-400  bg-stone-200">
-              <div className="px-6 py-4 border-b border-stone-400 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-stone-900">
-                    Summary
-                  </h2>
-                  <p className="text-sm text-stone-600">
-                    Output generated from your pasted texts
-                  </p>
-                </div>
-              </div>
+            <div className="w-full border-2 border-[#352F44] rounded-sm bg-[#E9E9E9]">
               <div className="p-6">
                 {summary ? (
-                  <div className="w-full text-stone-950 text-md prose prose-stone max-w-none">
+                  <div className="w-full text-[#352F44] text-md prose prose-stone max-w-none">
                     <Markdown
                       remarkPlugins={[remarkGfm]}
                       components={markdownComponents}
@@ -356,9 +242,7 @@ export default function Summarizer() {
                     </Markdown>
                   </div>
                 ) : (
-                  <div className="text-stone-700 text-sm">
-                    Streaming summary…
-                  </div>
+                  <div className="text-stone-700 text-sm">Generating</div>
                 )}
               </div>
             </div>
