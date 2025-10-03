@@ -1,3 +1,6 @@
+// SSR Concept 6: Server-Side API Routes
+// This API route demonstrates Next.js server-side API handling
+
 import { GoogleGenAI } from "@google/genai";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
@@ -20,6 +23,14 @@ interface StreamChunk {
   candidates?: Candidate[];
 }
 
+// SSR Concept 7: Server-Side Request Processing
+// This API route runs entirely on the server:
+// - Receives HTTP requests on the server
+// - Processes data server-side without client involvement
+// - Makes external API calls (Google Gemini) from server
+// - Streams responses back to client
+// - Handles authentication and security server-side
+// Benefits: Better security, reduced client load, server-side processing
 export async function POST(req: NextRequest) {
   const { message, model: modelType = "gemini-2.5-flash" } = await req.json();
 
