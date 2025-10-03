@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "zumaniz",
+      "name": "sumanize",
       "dependencies": {
         "@google/genai": "^1.21.0",
         "@phosphor-icons/react": "^2.1.10",
