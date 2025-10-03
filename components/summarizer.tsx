@@ -1,9 +1,20 @@
+// SSR Concept 8: Client Component with Server-Client Boundary
+// This component demonstrates the boundary between server and client rendering
+
 "use client";
 
 import { useSummarize } from "@/hooks/use-summarize";
 import { PasteArea } from "./paste-area";
 import { SummaryResult } from "./summary-result";
 
+// SSR Concept 9: Client-Side Interactivity
+// This is a Client Component that:
+// - Runs in the browser (client-side)
+// - Handles user interactions and state management
+// - Uses React hooks for state and effects
+// - Communicates with server-side API routes
+// - Provides dynamic, interactive user experience
+// Server sends initial HTML, then this component "hydrates" to add interactivity
 export default function Summarizer() {
   const {
     pastedItems,
