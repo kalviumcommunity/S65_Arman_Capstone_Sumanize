@@ -1,60 +1,60 @@
 # Stage 1: Builder
-# Use Node.js 20-alpine as it's required by @google/genai and is a good modern version.
+# We're using Node.js 20 (Alpine Linux version)
 FROM node:20-alpine AS builder
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to leverage Docker layer caching
-# This means if only your code changes, but dependencies don't, npm ci won't rerun.
+# Copy package files first - this is smart because these files don't change often
+# Docker will reuse this step if only your code changes, saving time
 COPY package.json package-lock.json* ./
 
-# Install ALL dependencies (production and development) for the build stage.
-# This is crucial for Next.js to find 'typescript' and other build-time tools.
+# Install all dependencies - like gathering all ingredients before cooking
+# We need both production and development tools to build the Next.js application
 RUN npm ci
 
 # Copy the rest of your application code
 COPY . .
 
-# Run the Next.js build command
+# Build the application
+# This creates an optimized version ready for production
 RUN npm run build
 
 # Stage 2: Runner
-# Use the same Node.js 20-alpine for consistency and to match the builder's environment.
+# Now we create a clean, optimized container for production
+# Same base as builder for consistency
 FROM node:20-alpine AS runner
 
-# Set the working directory inside the container
+# Set the working directory
 WORKDIR /app
 
-# Create a non-root user and group for security best practices.
-# Using system users/groups and specific IDs (1001 is common for node/next).
+# Create a non-root user for security
+# This prevents security risks if someone hacks the container
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy only the necessary build artifacts from the builder stage.
-# This keeps the final image small and secure.
-# standalone: the optimized Next.js server and dependencies
-# static: static assets like images, fonts
+# Copy only what we need from the builder
+# This makes our final container much smaller and more secure
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 
 # Copy public assets
 COPY --from=builder /app/public ./public
 
-# Ensure the non-root user 'nextjs' owns the application files for proper permissions
+# Give ownership to our non-root user
 RUN chown -R nextjs:nodejs /app
 
-# Switch to the non-root user 'nextjs'
+# Switch to the non-root user
 USER nextjs
 
-# Expose the port your Next.js application runs on
+# Open port 3000
 EXPOSE 3000
 
-# Set environment variables for the application
+# Set environment variables
 ENV PORT=3000
 ENV NODE_ENV=production
-# Crucial: Tell Next.js to bind to all network interfaces so it's accessible from outside the container
+# Important: Allow connections from anywhere
 ENV HOSTNAME="0.0.0.0"
 
-# Command to run the Next.js production server
+# Start the server
 CMD ["node", "server.js"]

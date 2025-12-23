@@ -50,32 +50,35 @@ export function PasteArea({
         contentEditable={!isLoading}
         onPaste={handlePaste}
         onKeyDown={handleKeyDown}
-        className="w-full min-h-60 bg-transparent text-[#e0def4] border-2 border-dashed border-[#908caa] rounded-xl focus:outline-none focus:ring-0 p-4 text-base overflow-y-auto max-h-96"
+        className="w-full min-h-72 bg-foreground/5 border-2 border-dashed border-foreground/20 rounded-xl focus:outline-none focus:border-primary/50 transition-colors p-5 text-base overflow-y-auto max-h-96"
         suppressContentEditableWarning
       >
         {pastedItems.length === 0 ? (
-          <div className="text-[#908caa] pointer-events-none select-none">
-            Paste your text here... (Ctrl+Enter to summarize)
+          <div className="text-foreground/40 pointer-events-none select-none">
+            Paste your text here...{" "}
+            <span className="text-foreground/30">
+              (Ctrl+Enter to summarize)
+            </span>
           </div>
         ) : (
           <div className="flex flex-col gap-3">
             {pastedItems.map((item) => (
               <div
                 key={item.id}
-                className="relative group bg-[#26233a] border border-[#6e6a86] rounded-lg p-3 text-sm"
+                className="relative group bg-background border border-foreground/10 rounded-lg p-4 text-sm shadow-sm hover:border-primary/30 transition-colors"
               >
                 <button
                   type="button"
                   onClick={() => onRemoveItem(item.id)}
-                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-[#eb6f92] hover:bg-[#d84a70] text-white w-5 h-5 rounded flex items-center justify-center text-xs font-bold"
+                  className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity bg-error hover:bg-error/80 text-background w-6 h-6 rounded flex items-center justify-center text-xs font-semibold"
                   aria-label="Remove item"
                 >
                   ×
                 </button>
-                <div className="text-[#c4a7e7] font-semibold text-xs mb-1">
+                <div className="text-primary font-semibold text-xs mb-1.5">
                   Text #{pastedItems.indexOf(item) + 1}
                 </div>
-                <div className="text-[#e0def4] line-clamp-3 break-words whitespace-pre-wrap">
+                <div className="text-foreground line-clamp-3 break-words whitespace-pre-wrap">
                   {item.text}
                 </div>
               </div>
@@ -88,7 +91,7 @@ export function PasteArea({
         <button
           type="button"
           onClick={onSummarize}
-          className="absolute bottom-4 right-4 bg-[#c4a7e7] hover:bg-[#b794e0] text-[#352F44] font-semibold py-2 px-4 rounded-lg transition-colors duration-200 shadow-lg"
+          className="absolute bottom-4 right-4 bg-primary hover:bg-primary/90 text-background font-semibold py-2.5 px-5 rounded-lg transition-colors shadow-sm"
         >
           Summarize ({pastedItems.length})
         </button>

@@ -8,30 +8,49 @@ export default function ErrorPage({
   reset?: () => void;
 }) {
   return (
-    <main className="bg-[#191724] font-mono min-h-screen w-full flex items-center justify-center px-4 py-10">
+    <main className="bg-background min-h-screen w-full flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-2xl text-center">
-        <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-[#c4a7e7] mb-3">
-          something went wrong
+        <div className="w-16 h-16 bg-error/10 rounded-full flex items-center justify-center mx-auto mb-6">
+          <svg
+            className="w-8 h-8 text-error"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <title>Error icon</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+        </div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-foreground mb-3">
+          Something went wrong
         </h1>
-        <p className="text-base sm:text-lg font-medium text-[#6e6a86] mb-8">
+        <p className="text-base sm:text-lg text-foreground/60 mb-8">
           {error?.message || "An unexpected error occurred. Please try again."}
         </p>
         <div className="flex items-center justify-center gap-3">
           <button
-            onClick={() =>
-              typeof reset === "function"
-                ? reset()
-                : (window.location.href = "/")
-            }
-            className="rounded-md bg-[#c4a7e7] text-[#191724] px-4 py-2 text-sm font-semibold hover:opacity-90 transition"
+            type="button"
+            onClick={() => {
+              if (typeof reset === "function") {
+                reset();
+              } else {
+                window.location.href = "/";
+              }
+            }}
+            className="rounded-lg bg-primary hover:bg-primary/90 text-background px-5 py-2.5 text-sm font-semibold transition-colors"
           >
-            try again
+            Try again
           </button>
           <a
             href="/"
-            className="rounded-md border border-[#6e6a86]/40 text-[#e0def4] px-4 py-2 text-sm font-semibold hover:bg-[#1f1b2a] transition"
+            className="rounded-lg border border-foreground/20 text-foreground px-5 py-2.5 text-sm font-semibold hover:bg-foreground/5 transition-colors"
           >
-            go home
+            Go home
           </a>
         </div>
       </div>

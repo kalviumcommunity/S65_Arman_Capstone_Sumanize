@@ -2,12 +2,7 @@ node_modules
 .next
 .git
 .github
-.vscode
 Dockerfile
-.dockerignore
 README.md
 *.log
 .env*
-.nyc_output
-coverage
-.next

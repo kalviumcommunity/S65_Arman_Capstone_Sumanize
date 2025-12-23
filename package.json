@@ -10,22 +10,23 @@
     "format": "biome format --write"
   },
   "dependencies": {
-    "@google/genai": "^1.21.0",
+    "@google/genai": "^1.31.0",
     "@phosphor-icons/react": "^2.1.10",
     "next": "15.5.4",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-markdown": "^10.1.0",
     "remark-gfm": "^4.0.1",
-    "zod": "^4.1.11"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@biomejs/biome": "2.2.0",
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/node": "^20.19.25",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "happy-dom": "^19.0.2",
+    "tailwindcss": "^4.1.17",
+    "typescript": "^5.9.3"
   }
 }
